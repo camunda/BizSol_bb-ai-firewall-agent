@@ -1,0 +1,57 @@
+x-spring-app: &spring-app
+  image: maven:3.9-eclipse-temurin-21 # includes Maven + JDK 21
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  environment: &common-env
+    # expects a local c8run as go-to Camunda instance
+    ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS: ${CAMUNDA_HOST:-host.docker.internal}:${CAMUNDA_GRPC_PORT:-26500}
+    CAMUNDA_CLIENT_ZEEBE_BASE-URL: ${CAMUNDA_PROTOCOL:-http}://${CAMUNDA_HOST:-host.docker.internal}:${CAMUNDA_PORT:-8080}
+    SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+    SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+    MAVEN_OPTS: "-Dmaven.repo.local=/root/.m2/repository"
+
+    
+# for Spring HotReload https://docs.spring.io/spring-boot/reference/using/devtools.html
+## Add DevTools to Each Spring Boot App
+## In each app's pom.xml:
+# <dependencies>
+#     <!-- ... other dependencies ... -->
+#
+#     <dependency>
+#         <groupId>org.springframework.boot</groupId>
+#         <artifactId>spring-boot-devtools</artifactId>
+#         <scope>runtime</scope>
+#         <optional>true</optional>
+#     </dependency>
+# </dependencies>
+
+
+services:
+  BizSol_bb-prompt-safeguard:
+    <<: *spring-app
+    depends_on:
+      camunda-check:
+        condition: service_completed_successfully
+    working_dir: /app
+    volumes:
+      - ./BizSol_bb-prompt-safeguard/JsonConverter:/app
+      - maven-cache:/root/.m2
+    command: mvn spring-boot:run 
+    ports:
+      - "${PROMPT_SAFEGUARD_PORT:-8081}:8080"
+      - "${PROMPT_SAFEGUARD_LIVERELOAD_PORT:-35729}:35729"
+
+  # app2:
+  #   <<: *spring-app
+  #   working_dir: /app
+  #   volumes:
+  #     - ./spring-app-2:/app
+  #     - maven-cache:/root/.m2
+  #     - j9-cache:/cache
+  #   command: ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.devtools.restart.enabled=true"
+  #   ports:
+  #     - "${APP2_PORT:-8082}:8080"
+  #     - "${APP2_LIVERELOAD_PORT:-35730}:35729"
+
+volumes:
+  maven-cache:

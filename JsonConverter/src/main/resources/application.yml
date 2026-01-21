@@ -1,0 +1,19 @@
+
+camunda:
+  client:
+    mode: self-managed
+    auth:
+      method: none
+    grpc-address: http://host.docker.internal:26500
+    rest-address: http://host.docker.internal:8080
+
+# enable usage metrics
+# https://docs.camunda.io/docs/apis-tools/camunda-spring-boot-starter/configuration/#observing-metrics
+management:
+  endpoints:
+    web:
+      exposure:
+        include: metrics
+spring:
+  application:
+    name: JSON Converter
