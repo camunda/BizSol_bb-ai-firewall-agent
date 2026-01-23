@@ -27,19 +27,19 @@ x-spring-app: &spring-app
 
 
 services:
-  BizSol_bb-prompt-safeguard:
+  BizSol_bb-Verification-Agent:
     <<: *spring-app
     depends_on:
       camunda-check:
         condition: service_completed_successfully
     working_dir: /app
     volumes:
-      - ./BizSol_bb-prompt-safeguard/JsonConverter:/app
+      - ./BizSol_bb-Verification-Agent/JsonConverter:/app
       - maven-cache:/root/.m2
     command: mvn spring-boot:run 
     ports:
-      - "${PROMPT_SAFEGUARD_PORT:-8081}:8080"
-      - "${PROMPT_SAFEGUARD_LIVERELOAD_PORT:-35729}:35729"
+      - "${VERIFICATION_AGENT_PORT:-8081}:8080"
+      - "${VERIFICATION_AGENT_LIVERELOAD_PORT:-35729}:35729"
 
   # app2:
   #   <<: *spring-app
