@@ -2,10 +2,10 @@ x-spring-app: &spring-app
   image: maven:3.9-eclipse-temurin-21 # includes Maven + JDK 21
   extra_hosts:
     - "host.docker.internal:host-gateway"
-  environment: &common-env
+  environment:
     # expects a local c8run as go-to Camunda instance
-    ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS: ${CAMUNDA_GRPC_ADDRESS:-host.docker.internal:26500}
-    CAMUNDA_CLIENT_ZEEBE_BASE-URL: ${CAMUNDA_BASE_URL:-http://host.docker.internal:8080}
+    CAMUNDA_CLIENT_GRPC_ADDRESS: ${CAMUNDA_GRPC_ADDRESS:-http://host.docker.internal:26500}
+    CAMUNDA_CLIENT_REST_ADDRESS: ${CAMUNDA_BASE_URL:-http://host.docker.internal:8080}
     SPRING_DEVTOOLS_RESTART_ENABLED: "true"
     SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
     MAVEN_OPTS: "-Dmaven.repo.local=/root/.m2/repository"
