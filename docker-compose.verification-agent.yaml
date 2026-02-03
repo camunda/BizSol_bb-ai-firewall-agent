@@ -34,7 +34,7 @@ services:
         condition: service_completed_successfully
     working_dir: /app
     volumes:
-      - ./BizSol_bb-Verification-Agent/JsonConverter:/app
+      - ./JsonConverter:/app
       - maven-cache:/root/.m2
     command: mvn spring-boot:run 
     ports:
