@@ -48,4 +48,4 @@ echo ""
 # Extract JSON and parse results
 echo "$OUTPUT" | \
   sed -n '/^{/,$p' | \
-  jq '{execTime: .variables.execTime, tokenUsage: .variables.tokenUsage, responseJSON: .variables.responseJSON}'
+  jq '{execTime: .variables.execTime, tokenUsage: .variables.tokenUsage, safeGuardResult: .variables.safeGuardResult}'
