@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -39,6 +41,8 @@ import org.springframework.boot.test.context.SpringBootTest;
     })
 @CamundaSpringProcessTest
 public class SafeguardAgentProcessTest {
+
+    private static final Logger log = LoggerFactory.getLogger(SafeguardAgentProcessTest.class);
 
     @Autowired
     private CamundaClient client;
@@ -86,16 +90,11 @@ public class SafeguardAgentProcessTest {
 
         // Unfiltered search – print ALL jobs
         var allJobs = client.newJobSearchRequest().send().join();
-        System.out.println("=== ALL JOBS (unfiltered) ===");
+        log.info("=== ALL JOBS (unfiltered) ===");
         for (var job : allJobs.items()) {
-            System.out.println("  Job: type=" + job.getType()
-                + " state=" + job.getState()
-                + " kind=" + job.getKind()
-                + " retries=" + job.getRetries()
-                + " key=" + job.getJobKey()
-                + " elementId=" + job.getElementId()
-                + " tenantId=" + job.getTenantId()
-                + " worker=" + job.getWorker());
+            log.info("  Job: type={} state={} kind={} retries={} key={} elementId={} tenantId={} worker={}",
+                job.getType(), job.getState(), job.getKind(), job.getRetries(),
+                job.getJobKey(), job.getElementId(), job.getTenantId(), job.getWorker());
         }
 
         // Search with the exact filter used by completeJob()
@@ -108,14 +107,11 @@ public class SafeguardAgentProcessTest {
                     io.camunda.client.api.search.enums.JobState.TIMED_OUT))
                 .retries(r -> r.gte(1)))
             .send().join();
-        System.out.println("=== FILTERED JOBS (type=" + JOB_TYPE_AI_AGENT + ", state IN (CREATED,FAILED,RETRIES_UPDATED,TIMED_OUT), retries>=1) ===");
-        System.out.println("  Count: " + filteredJobs.items().size());
+        log.info("=== FILTERED JOBS (type={}, state IN (CREATED,FAILED,RETRIES_UPDATED,TIMED_OUT), retries>=1) ===", JOB_TYPE_AI_AGENT);
+        log.info("  Count: {}", filteredJobs.items().size());
         for (var job : filteredJobs.items()) {
-            System.out.println("  Job: type=" + job.getType()
-                + " state=" + job.getState()
-                + " kind=" + job.getKind()
-                + " retries=" + job.getRetries()
-                + " key=" + job.getJobKey());
+            log.info("  Job: type={} state={} kind={} retries={} key={}",
+                job.getType(), job.getState(), job.getKind(), job.getRetries(), job.getJobKey());
         }
 
         // Try to activate the job via REST
@@ -124,12 +120,10 @@ public class SafeguardAgentProcessTest {
             .maxJobsToActivate(1)
             .requestTimeout(java.time.Duration.ofSeconds(5))
             .send().join();
-        System.out.println("=== ACTIVATE JOBS ===");
-        System.out.println("  Activated: " + activateResult.getJobs().size());
+        log.info("=== ACTIVATE JOBS ===");
+        log.info("  Activated: {}", activateResult.getJobs().size());
         for (var job : activateResult.getJobs()) {
-            System.out.println("  Job: type=" + job.getType()
-                + " key=" + job.getKey()
-                + " retries=" + job.getRetries());
+            log.info("  Job: type={} key={} retries={}", job.getType(), job.getKey(), job.getRetries());
         }
     }
 
