@@ -34,12 +34,12 @@ services:
         condition: service_completed_successfully
     working_dir: /app
     volumes:
-      - ./JsonConverter:/app
+      - ./src:/app
       - maven-cache:/root/.m2
     command: mvn spring-boot:run 
     ports:
-      - "${VERIFICATION_AGENT_PORT:-8081}:8080"
-      - "${VERIFICATION_AGENT_LIVERELOAD_PORT:-35729}:35729"
+      - "${AI_FIREWALL_AGENT_PORT:-8081}:8080"
+      - "${AI_FIREWALL_AGENT_LIVERELOAD_PORT:-35729}:35729"
 
   # app2:
   #   <<: *spring-app
