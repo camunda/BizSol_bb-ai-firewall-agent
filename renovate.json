@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "groupName": "Spring Boot",
+      "matchPackagePatterns": ["^org.springframework.boot"]
+    },
+    {
+      "groupName": "Camunda",
+      "matchPackagePatterns": ["^io.camunda"]
+    },
+    {
+      "groupName": "Test dependencies",
+      "matchPackagePatterns": ["junit", "mockito", "assertj", "wiremock"],
+      "matchDepTypes": ["test"]
+    },
+    {
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"]
+    }
+  ],
+  "maven": {
+    "enabled": true
+  },
+  "github-actions": {
+    "enabled": true
+  },
+  "dependencyDashboard": true,
+  "schedule": ["before 6am on monday"]
+}
