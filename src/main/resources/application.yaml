@@ -3,13 +3,11 @@ spring:
     name: BizSol AI Firewall Agent
 
 server:
-  port: 8080
+  port: 9090
 
 management:
   endpoints:
     web:
       exposure:
         include: metrics
-
-logging.level.io.camunda.client.impl.CamundaCallCredentials: ERROR
 
