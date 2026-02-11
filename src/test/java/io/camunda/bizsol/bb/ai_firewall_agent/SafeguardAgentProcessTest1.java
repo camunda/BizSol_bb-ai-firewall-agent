@@ -1,4 +1,4 @@
-package io.camunda.bizsol.jsonconverter;
+package io.camunda.bizsol.bb.ai_firewall_agent;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
