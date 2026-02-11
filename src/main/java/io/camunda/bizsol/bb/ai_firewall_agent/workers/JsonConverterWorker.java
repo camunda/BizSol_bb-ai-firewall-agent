@@ -1,4 +1,4 @@
-package io.camunda.bizsol.jsonconverter;
+package io.camunda.bizsol.bb.ai_firewall_agent.workers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

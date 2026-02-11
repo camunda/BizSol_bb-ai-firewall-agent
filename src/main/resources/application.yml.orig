@@ -20,4 +20,4 @@ management:
         include: metrics
 spring:
   application:
-    name: JSON Converter
+    name: AI Firewall Agent
