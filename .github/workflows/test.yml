@@ -34,47 +34,78 @@ jobs:
           echo "## Test Results" > coverage-report.md
           echo "" >> coverage-report.md
           
-          # Check if JaCoCo report exists
-          if [ -f "target/site/jacoco/index.html" ]; then
+          # Check if JaCoCo XML report exists and parse it using xmllint
+          if [ -f "target/site/jacoco/jacoco.xml" ]; then
             echo "### Code Coverage (JaCoCo)" >> coverage-report.md
             
-            # Extract coverage percentage from JaCoCo report
-            COVERAGE=$(grep -oP '(?<=Total<\/td><td class="bar">)[^%]+(?=%)' target/site/jacoco/index.html || echo "N/A")
-            echo "- **Line Coverage:** ${COVERAGE}%" >> coverage-report.md
+            # Extract coverage metrics from JaCoCo XML report using xmllint
+            if command -v xmllint &> /dev/null; then
+              LINE_MISSED=$(xmllint --xpath "sum(//counter[@type='LINE']/@missed)" target/site/jacoco/jacoco.xml 2>/dev/null || echo "0")
+              LINE_COVERED=$(xmllint --xpath "sum(//counter[@type='LINE']/@covered)" target/site/jacoco/jacoco.xml 2>/dev/null || echo "0")
+              
+              if [ "$LINE_COVERED" != "0" ] || [ "$LINE_MISSED" != "0" ]; then
+                TOTAL_LINES=$((LINE_MISSED + LINE_COVERED))
+                COVERAGE_PCT=$(awk -v covered="$LINE_COVERED" -v total="$TOTAL_LINES" 'BEGIN {printf "%.2f", (covered/total)*100}')
+                echo "- **Line Coverage:** ${COVERAGE_PCT}% (${LINE_COVERED}/${TOTAL_LINES})" >> coverage-report.md
+              else
+                echo "- **Line Coverage:** N/A" >> coverage-report.md
+              fi
+            else
+              echo "- **Line Coverage:** N/A (xmllint not available)" >> coverage-report.md
+            fi
             echo "" >> coverage-report.md
           fi
           
-          # Check for test results
-          if [ -d "target/surefire-reports" ]; then
-            TESTS_TOTAL=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "tests=" {} \; | sed 's/.*tests="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
-            TESTS_FAILED=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "failures=" {} \; | sed 's/.*failures="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
-            TESTS_ERRORS=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "errors=" {} \; | sed 's/.*errors="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
-            TESTS_SKIPPED=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "skipped=" {} \; | sed 's/.*skipped="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
+          # Parse test results using xmllint for more robust XML handling
+          parse_test_results() {
+            local test_dir=$1
+            local test_type=$2
             
-            echo "### Unit Test Results" >> coverage-report.md
-            echo "- **Total Tests:** ${TESTS_TOTAL:-0}" >> coverage-report.md
-            echo "- **Passed:** $((${TESTS_TOTAL:-0} - ${TESTS_FAILED:-0} - ${TESTS_ERRORS:-0} - ${TESTS_SKIPPED:-0}))" >> coverage-report.md
-            echo "- **Failed:** ${TESTS_FAILED:-0}" >> coverage-report.md
-            echo "- **Errors:** ${TESTS_ERRORS:-0}" >> coverage-report.md
-            echo "- **Skipped:** ${TESTS_SKIPPED:-0}" >> coverage-report.md
-            echo "" >> coverage-report.md
-          fi
+            if [ ! -d "$test_dir" ]; then
+              return
+            fi
+            
+            local total=0 failed=0 errors=0 skipped=0
+            
+            for xml_file in "$test_dir"/TEST-*.xml; do
+              if [ -f "$xml_file" ]; then
+                if command -v xmllint &> /dev/null; then
+                  t=$(xmllint --xpath "string(/testsuite/@tests)" "$xml_file" 2>/dev/null || echo "0")
+                  f=$(xmllint --xpath "string(/testsuite/@failures)" "$xml_file" 2>/dev/null || echo "0")
+                  e=$(xmllint --xpath "string(/testsuite/@errors)" "$xml_file" 2>/dev/null || echo "0")
+                  s=$(xmllint --xpath "string(/testsuite/@skipped)" "$xml_file" 2>/dev/null || echo "0")
+                else
+                  # Fallback to grep if xmllint is not available
+                  t=$(grep -oP 'tests="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
+                  f=$(grep -oP 'failures="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
+                  e=$(grep -oP 'errors="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
+                  s=$(grep -oP 'skipped="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
+                fi
+                
+                total=$((total + ${t:-0}))
+                failed=$((failed + ${f:-0}))
+                errors=$((errors + ${e:-0}))
+                skipped=$((skipped + ${s:-0}))
+              fi
+            done
+            
+            if [ $total -gt 0 ]; then
+              local passed=$((total - failed - errors - skipped))
+              echo "### ${test_type} Test Results" >> coverage-report.md
+              echo "- **Total Tests:** $total" >> coverage-report.md
+              echo "- **Passed:** $passed" >> coverage-report.md
+              echo "- **Failed:** $failed" >> coverage-report.md
+              echo "- **Errors:** $errors" >> coverage-report.md
+              echo "- **Skipped:** $skipped" >> coverage-report.md
+              echo "" >> coverage-report.md
+            fi
+          }
           
-          # Check for integration test results
-          if [ -d "target/failsafe-reports" ]; then
-            IT_TESTS_TOTAL=$(find target/failsafe-reports -name "TEST-*.xml" -exec grep -h "tests=" {} \; | sed 's/.*tests="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
-            IT_TESTS_FAILED=$(find target/failsafe-reports -name "TEST-*.xml" -exec grep -h "failures=" {} \; | sed 's/.*failures="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
-            IT_TESTS_ERRORS=$(find target/failsafe-reports -name "TEST-*.xml" -exec grep -h "errors=" {} \; | sed 's/.*errors="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
-            IT_TESTS_SKIPPED=$(find target/failsafe-reports -name "TEST-*.xml" -exec grep -h "skipped=" {} \; | sed 's/.*skipped="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
-            
-            echo "### Integration Test Results" >> coverage-report.md
-            echo "- **Total Tests:** ${IT_TESTS_TOTAL:-0}" >> coverage-report.md
-            echo "- **Passed:** $((${IT_TESTS_TOTAL:-0} - ${IT_TESTS_FAILED:-0} - ${IT_TESTS_ERRORS:-0} - ${IT_TESTS_SKIPPED:-0}))" >> coverage-report.md
-            echo "- **Failed:** ${IT_TESTS_FAILED:-0}" >> coverage-report.md
-            echo "- **Errors:** ${IT_TESTS_ERRORS:-0}" >> coverage-report.md
-            echo "- **Skipped:** ${IT_TESTS_SKIPPED:-0}" >> coverage-report.md
-            echo "" >> coverage-report.md
-          fi
+          # Parse unit test results
+          parse_test_results "target/surefire-reports" "Unit"
+          
+          # Parse integration test results
+          parse_test_results "target/failsafe-reports" "Integration"
 
       - name: Comment PR with Coverage
         if: always() && github.event_name == 'pull_request'
