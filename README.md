@@ -7,6 +7,10 @@ It takes a user prompt and safeguards against malicious intent.
 - `userPromptToSafeguard` (string) for user prompt; **default**: null
 - `systemPrompt` (string) for system prompt; **default**: (see file `safeguard-systemprompt.txt`)
 
+## mandatory customizations
+
+- complete the `Model provider` and `Model` sections of the `Safeguard Prompt` task
+
 ## Guardrails
 
 - `maxTries` (int) for max allowed iterations over safeguard attempts; **default**: 3
