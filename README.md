@@ -2,7 +2,7 @@
 
 It takes a user prompt and safeguards against malicious intent.
 
-## mandatory inputs 
+## mandatory inputs
 
 - `userPromptToSafeguard` (string) for user prompt; **default**: null
 - `systemPrompt` (string) for system prompt; **default**: (see file `safeguard-systemprompt.txt`)
