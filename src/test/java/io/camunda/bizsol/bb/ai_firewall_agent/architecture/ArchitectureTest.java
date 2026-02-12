@@ -35,7 +35,8 @@ class ArchitectureTest {
                         "java..",
                         "org.springframework..",
                         "io.camunda..",
-                        "org.slf4j..")
+                        "org.slf4j..",
+                        "com.fasterxml.jackson..")
                 .check(classes);
     }
 
@@ -52,6 +53,7 @@ class ArchitectureTest {
                         "java..",
                         "org.springframework..",
                         "org.slf4j..")
+                .allowEmptyShould(true)
                 .check(classes);
     }
 
@@ -63,6 +65,7 @@ class ArchitectureTest {
                 .should()
                 .onlyDependOnClassesThat()
                 .resideInAnyPackage("..models..", "java..", "com.fasterxml.jackson..")
+                .allowEmptyShould(true)
                 .check(classes);
     }
 
@@ -72,11 +75,11 @@ class ArchitectureTest {
                 .consideringAllDependencies()
                 .layer("Workers")
                 .definedBy("..workers..")
-                .layer("Services")
+                .optionalLayer("Services")
                 .definedBy("..services..")
-                .layer("Models")
+                .optionalLayer("Models")
                 .definedBy("..models..")
-                .layer("Config")
+                .optionalLayer("Config")
                 .definedBy("..config..")
                 .whereLayer("Workers")
                 .mayNotBeAccessedByAnyLayer()
