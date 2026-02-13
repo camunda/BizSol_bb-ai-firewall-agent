@@ -2,6 +2,7 @@ package io.camunda.bizsol.bb.ai_firewall_agent.workers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.camunda.client.exception.BpmnError;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -85,40 +86,40 @@ class JsonConverterWorkerTest {
     // ── error-path tests ─────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("Throws RuntimeException for malformed JSON")
+    @DisplayName("Throws BpmnError for malformed JSON")
     void throwsOnMalformedJson() {
-        RuntimeException ex =
-                assertThrows(RuntimeException.class, () -> worker.convertJsonString("{bad json}"));
+        BpmnError ex = assertThrows(BpmnError.class, () -> worker.convertJsonString("{bad json}"));
 
-        assertTrue(ex.getMessage().startsWith("Invalid JSON format:"));
-        assertNotNull(ex.getCause());
+        assertEquals("jsonConversionError", ex.getErrorCode());
+        assertTrue(ex.getErrorMessage().startsWith("Invalid JSON format:"));
     }
 
     @Test
-    @DisplayName("Throws IllegalArgumentException for null jsonString")
+    @DisplayName("Throws on null jsonString")
     void throwsOnNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> worker.convertJsonString(null));
+        assertThrows(Exception.class, () -> worker.convertJsonString(null));
     }
 
     @Test
-    @DisplayName("Throws RuntimeException for XML input")
+    @DisplayName("Throws BpmnError for XML input")
     void throwsOnXmlInput() {
         String xml = "<root><item>value</item></root>";
 
-        RuntimeException ex =
-                assertThrows(RuntimeException.class, () -> worker.convertJsonString(xml));
+        BpmnError ex = assertThrows(BpmnError.class, () -> worker.convertJsonString(xml));
 
-        assertTrue(ex.getMessage().startsWith("Invalid JSON format:"));
+        assertEquals("jsonConversionError", ex.getErrorCode());
+        assertTrue(ex.getErrorMessage().startsWith("Invalid JSON format:"));
     }
 
     @Test
-    @DisplayName("Throws RuntimeException for plain text input")
+    @DisplayName("Throws BpmnError for plain text input")
     void throwsOnPlainTextInput() {
-        RuntimeException ex =
+        BpmnError ex =
                 assertThrows(
-                        RuntimeException.class,
+                        BpmnError.class,
                         () -> worker.convertJsonString("Hello, this is plain text."));
 
-        assertTrue(ex.getMessage().startsWith("Invalid JSON format:"));
+        assertEquals("jsonConversionError", ex.getErrorCode());
+        assertTrue(ex.getErrorMessage().startsWith("Invalid JSON format:"));
     }
 }

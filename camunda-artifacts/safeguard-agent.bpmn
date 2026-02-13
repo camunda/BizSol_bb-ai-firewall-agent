@@ -172,6 +172,16 @@
       <bpmn:incoming>Flow_0sk4sju</bpmn:incoming>
       <bpmn:escalationEventDefinition id="EscalationEventDefinition_04fi3au" escalationRef="Escalation_0topi1v" />
     </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_1xy6nu9" sourceRef="Event_errorJsonWorker" targetRef="Event_04d5nay" />
+    <bpmn:boundaryEvent id="Event_errorJsonWorker" attachedToRef="Activity_1thd7s5">
+      <bpmn:extensionElements />
+      <bpmn:outgoing>Flow_1xy6nu9</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1jl09d3" errorRef="Error_0spp02z" />
+    </bpmn:boundaryEvent>
+    <bpmn:intermediateThrowEvent id="Event_04d5nay">
+      <bpmn:incoming>Flow_1xy6nu9</bpmn:incoming>
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_1tlfyx6" escalationRef="Escalation_2d9sbdf" />
+    </bpmn:intermediateThrowEvent>
     <bpmn:textAnnotation id="TextAnnotation_0bwbzo7">
       <bpmn:text>- `userPromptToSafeguard` (string) for user prompt; **default**: null
 - `systemPrompt` (string) for system prompt; **default**: (see file `safeguard-systemprompt.txt`)
@@ -200,6 +210,8 @@
   <bpmn:escalation id="Escalation_0mq1k79" name="safeguard_task-agent-failed" escalationCode="&#34;safeguard_task-agent-failed&#34;" />
   <bpmn:escalation id="Escalation_0fl41u4" name="safeguard_bad-agent-output" escalationCode="&#34;safeguard_bad-agent-output&#34;" />
   <bpmn:escalation id="Escalation_0topi1v" name="safeguard_max-user-input-exceeded" escalationCode="&#34;safeguard_max-user-input-exceeded&#34;" />
+  <bpmn:error id="Error_0spp02z" name="jsonConversionError" errorCode="jsonConversionError" />
+  <bpmn:escalation id="Escalation_2d9sbdf" name="safeguard_json-worker-error" escalationCode="&#34;safeguard_json-worker-error&#34;" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="safeguard-agent">
       <bpmndi:BPMNShape id="Activity_1xiw17u_di" bpmnElement="Activity_1thd7s5">
@@ -258,10 +270,16 @@
           <dc:Bounds x="251" y="375" width="79" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_064lcy8_di" bpmnElement="Event_04d5nay">
+        <dc:Bounds x="892" y="462" width="36" height="36" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Association_030ox7l_di" bpmnElement="Association_030ox7l">
         <di:waypoint x="285" y="333" />
         <di:waypoint x="249" y="230" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_11wnnhw_di" bpmnElement="Event_errorJsonWorker">
+        <dc:Bounds x="852" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0bwbzo7_di" bpmnElement="TextAnnotation_0bwbzo7">
         <dc:Bounds x="160" y="40" width="363" height="190" />
         <bpmndi:BPMNLabel />
@@ -346,6 +364,11 @@
       <bpmndi:BPMNEdge id="Association_0g2yaw3_di" bpmnElement="Association_0g2yaw3">
         <di:waypoint x="1278" y="332" />
         <di:waypoint x="1278" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xy6nu9_di" bpmnElement="Flow_1xy6nu9">
+        <di:waypoint x="870" y="408" />
+        <di:waypoint x="870" y="480" />
+        <di:waypoint x="892" y="480" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
