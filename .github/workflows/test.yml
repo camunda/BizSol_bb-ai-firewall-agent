@@ -9,10 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      checks: write
 
     steps:
       - name: Checkout code
@@ -25,164 +21,69 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build and Test
+      - name: Build and run tests with coverage
         run: mvn clean verify
-
-      - name: Generate Coverage Report
-        if: always()
-        run: |
-          echo "## Test Results" > coverage-report.md
-          echo "" >> coverage-report.md
-          
-          # Check if JaCoCo XML report exists and parse it using xmllint
-          if [ -f "target/site/jacoco/jacoco.xml" ]; then
-            echo "### Code Coverage (JaCoCo)" >> coverage-report.md
-            
-            # Extract coverage metrics from JaCoCo XML report using xmllint
-            if command -v xmllint &> /dev/null; then
-              LINE_MISSED=$(xmllint --xpath "sum(//counter[@type='LINE']/@missed)" target/site/jacoco/jacoco.xml 2>/dev/null || echo "0")
-              LINE_COVERED=$(xmllint --xpath "sum(//counter[@type='LINE']/@covered)" target/site/jacoco/jacoco.xml 2>/dev/null || echo "0")
-              
-              if [ "$LINE_COVERED" != "0" ] || [ "$LINE_MISSED" != "0" ]; then
-                TOTAL_LINES=$((LINE_MISSED + LINE_COVERED))
-                COVERAGE_PCT=$(awk -v covered="$LINE_COVERED" -v total="$TOTAL_LINES" 'BEGIN {printf "%.2f", (covered/total)*100}')
-                echo "- **Line Coverage:** ${COVERAGE_PCT}% (${LINE_COVERED}/${TOTAL_LINES})" >> coverage-report.md
-              else
-                echo "- **Line Coverage:** N/A" >> coverage-report.md
-              fi
-            else
-              echo "- **Line Coverage:** N/A (xmllint not available)" >> coverage-report.md
-            fi
-            echo "" >> coverage-report.md
-          fi
-          
-          # Parse test results using xmllint for more robust XML handling
-          parse_test_results() {
-            local test_dir=$1
-            local test_type=$2
-            
-            if [ ! -d "$test_dir" ]; then
-              return
-            fi
-            
-            local total=0 failed=0 errors=0 skipped=0
-            
-            for xml_file in "$test_dir"/TEST-*.xml; do
-              if [ -f "$xml_file" ]; then
-                if command -v xmllint &> /dev/null; then
-                  t=$(xmllint --xpath "string(/testsuite/@tests)" "$xml_file" 2>/dev/null || echo "0")
-                  f=$(xmllint --xpath "string(/testsuite/@failures)" "$xml_file" 2>/dev/null || echo "0")
-                  e=$(xmllint --xpath "string(/testsuite/@errors)" "$xml_file" 2>/dev/null || echo "0")
-                  s=$(xmllint --xpath "string(/testsuite/@skipped)" "$xml_file" 2>/dev/null || echo "0")
-                else
-                  # Fallback to grep if xmllint is not available
-                  t=$(grep -oP 'tests="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
-                  f=$(grep -oP 'failures="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
-                  e=$(grep -oP 'errors="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
-                  s=$(grep -oP 'skipped="\K[0-9]+' "$xml_file" 2>/dev/null || echo "0")
-                fi
-                
-                total=$((total + ${t:-0}))
-                failed=$((failed + ${f:-0}))
-                errors=$((errors + ${e:-0}))
-                skipped=$((skipped + ${s:-0}))
-              fi
-            done
-            
-            if [ $total -gt 0 ]; then
-              local passed=$((total - failed - errors - skipped))
-              echo "### ${test_type} Test Results" >> coverage-report.md
-              echo "- **Total Tests:** $total" >> coverage-report.md
-              echo "- **Passed:** $passed" >> coverage-report.md
-              echo "- **Failed:** $failed" >> coverage-report.md
-              echo "- **Errors:** $errors" >> coverage-report.md
-              echo "- **Skipped:** $skipped" >> coverage-report.md
-              echo "" >> coverage-report.md
-            fi
-          }
-          
-          # Parse unit test results
-          parse_test_results "target/surefire-reports" "Unit"
-          
-          # Parse integration test results
-          parse_test_results "target/failsafe-reports" "Integration"
-
-      - name: Comment PR with Coverage
-        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true # continue, to be able to comment on PR
+        id: build
+      
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            let coverageReport = 'Coverage report not available';
             
-            try {
-              if (fs.existsSync('coverage-report.md')) {
-                coverageReport = fs.readFileSync('coverage-report.md', 'utf8');
+            // Read coverage thresholds from pom.xml (single source of truth)
+            const pomContent = fs.readFileSync('pom.xml', 'utf8');
+            const unitMin = Math.round(parseFloat(pomContent.match(/<unittest\.coverage\.min>([\d.]+)/)?.[1] || '0.80') * 100);
+            const cptMin = Math.round(parseFloat(pomContent.match(/<cpt\.coverage\.min>([\d.]+)/)?.[1] || '0.60') * 100);
+            
+            let comment = '## Test Coverage Report\n\n';
+            
+            // Check if JaCoCo index exists
+            const jacocoIndex = 'target/site/jacoco/index.html';
+            if (fs.existsSync(jacocoIndex)) {
+              const jacocoContent = fs.readFileSync(jacocoIndex, 'utf8');
+              const match = jacocoContent.match(/Total.*?(\d+)%/);
+              if (match) {
+                const coverage = parseInt(match[1]);
+                comment += `### Java Code Coverage: ${coverage}%\n`;
+                comment += coverage >= unitMin ? `✅ Meets minimum requirement (${unitMin}%)\n\n` : `❌ Below minimum requirement (${unitMin}%)\n\n`;
               }
-            } catch (error) {
-              console.error('Error reading coverage report:', error);
             }
             
-            const body = `${coverageReport}\n\n---\n*Automated coverage report generated by GitHub Actions*`;
+            // Check process test coverage
+            const reportFile = 'target/coverage-report/report.json';
+            if (fs.existsSync(reportFile)) {
+              const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+              if (report.coverages && report.coverages.length > 0) {
+                const processCoverage = (report.coverages[0].coverage * 100).toFixed(1);
+                const processId = report.coverages[0].processDefinitionId;
+                comment += `### Process Test Coverage (${processId}): ${processCoverage}%\n`;
+                comment += processCoverage >= cptMin ? `✅ Meets minimum requirement (${cptMin}%)\n\n` : `❌ Below minimum requirement (${cptMin}%)\n\n`;
+              }
+            }
             
-            // Find existing comment
-            const { data: comments } = await github.rest.issues.listComments({
+            comment += '📊 Detailed reports available in build artifacts';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              body: comment
             });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('Automated coverage report')
-            );
-            
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body
-              });
-            }
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            target/surefire-reports/
-            target/failsafe-reports/
-          retention-days: 30
-
-      - name: Upload Coverage Reports
-        if: always()
+      
+      - name: Fail if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
+      
+      - name: Upload coverage reports
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: |
             target/site/jacoco/
-            target/coverage-report/
-          retention-days: 30
-
-      - name: Publish Test Report
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Maven Tests
-          path: |
-            target/surefire-reports/TEST-*.xml
-            target/failsafe-reports/TEST-*.xml
-          reporter: java-junit
-          fail-on-error: true
+            target/process-test-coverage/
+          retention-days: 7
