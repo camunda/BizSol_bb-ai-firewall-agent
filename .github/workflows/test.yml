@@ -1,0 +1,89 @@
+name: Test Pull Request
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build and run tests with coverage
+        run: mvn clean verify
+        continue-on-error: true # continue, to be able to comment on PR
+        id: build
+      
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read coverage thresholds from pom.xml (single source of truth)
+            const pomContent = fs.readFileSync('pom.xml', 'utf8');
+            const unitMin = Math.round(parseFloat(pomContent.match(/<unittest\.coverage\.min>([\d.]+)/)?.[1] || '0.80') * 100);
+            const cptMin = Math.round(parseFloat(pomContent.match(/<cpt\.coverage\.min>([\d.]+)/)?.[1] || '0.60') * 100);
+            
+            let comment = '## Test Coverage Report\n\n';
+            
+            // Check if JaCoCo index exists
+            const jacocoIndex = 'target/site/jacoco/index.html';
+            if (fs.existsSync(jacocoIndex)) {
+              const jacocoContent = fs.readFileSync(jacocoIndex, 'utf8');
+              const match = jacocoContent.match(/Total.*?(\d+)%/);
+              if (match) {
+                const coverage = parseInt(match[1]);
+                comment += `### Java Code Coverage: ${coverage}%\n`;
+                comment += coverage >= unitMin ? `✅ Meets minimum requirement (${unitMin}%)\n\n` : `❌ Below minimum requirement (${unitMin}%)\n\n`;
+              }
+            }
+            
+            // Check process test coverage
+            const reportFile = 'target/coverage-report/report.json';
+            if (fs.existsSync(reportFile)) {
+              const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+              if (report.coverages && report.coverages.length > 0) {
+                const processCoverage = (report.coverages[0].coverage * 100).toFixed(1);
+                const processId = report.coverages[0].processDefinitionId;
+                comment += `### Process Test Coverage (${processId}): ${processCoverage}%\n`;
+                comment += processCoverage >= cptMin ? `✅ Meets minimum requirement (${cptMin}%)\n\n` : `❌ Below minimum requirement (${cptMin}%)\n\n`;
+              }
+            }
+            
+            comment += '📊 Detailed reports available in build artifacts';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Fail if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
+      
+      - name: Upload coverage reports
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            target/site/jacoco/
+            target/process-test-coverage/
+          retention-days: 7
