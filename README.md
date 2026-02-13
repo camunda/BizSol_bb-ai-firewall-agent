@@ -2,14 +2,20 @@
 
 It takes a user prompt and safeguards against malicious intent.
 
-## mandatory inputs 
+## mandatory inputs
 
 - `userPromptToSafeguard` (string) for user prompt; **default**: null
 - `systemPrompt` (string) for system prompt; **default**: (see file `safeguard-systemprompt.txt`)
 
-## mandatory customizations
+## Customizations
+
+### mandatory
 
 - complete the `Model provider` and `Model` sections of the `Safeguard Prompt` task
+
+### optional
+
+- if the targeted Camunda Version is >= `8.9`, the JSON converter worker can be substituted with the [`FEEL` expression `to json(value: Any)`](https://docs.camunda.io/docs/next/components/modeler/feel/builtin-functions/feel-built-in-functions-conversion/#to-jsonvalue)
 
 ## Guardrails
 
