@@ -24,7 +24,7 @@
       <bpmn:text>Start with only the required variable:
 - userPromptToSafeguard: "What is the status of my insurance claim number IC-2024-001?"
 
-Note: systemPrompt uses default from safeguard-systemprompt.txt</bpmn:text>
+Note: systemPrompt is optional; defaults to embedded template in safeguard-agent</bpmn:text>
     </bpmn:textAnnotation>
     <bpmn:association id="Association_1" associationDirection="None" sourceRef="StartEvent_1" targetRef="TextAnnotation_StartVariables" />
     <bpmn:textAnnotation id="TextAnnotation_Result">

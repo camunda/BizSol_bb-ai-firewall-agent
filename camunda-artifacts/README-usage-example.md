@@ -25,7 +25,7 @@ The example requires only the essential variable:
 - **userPromptToSafeguard** (required): The user prompt to be analyzed
   - Example: `"What is the status of my insurance claim number IC-2024-001?"`
 
-**Note:** The `systemPrompt` variable is optional and defaults to the content from `safeguard-systemprompt.txt` in the safeguard-agent process. The example demonstrates the minimal configuration by not passing this variable.
+**Note:** The `systemPrompt` variable is optional and defaults to a comprehensive prompt guard template embedded in the safeguard-agent process (see `safeguard-systemprompt-feel.txt`). The example demonstrates the minimal configuration by not passing this variable.
 
 ### Output Variables
 
