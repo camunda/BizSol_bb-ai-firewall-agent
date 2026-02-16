@@ -71,7 +71,7 @@
       <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
         <di:waypoint x="370" y="177" />
         <di:waypoint x="432" y="177" />
-      </bpmndi:BPMEdge>
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_1_di" bpmnElement="Association_1">
         <di:waypoint x="197" y="195" />
         <di:waypoint x="197" y="270" />
@@ -79,7 +79,7 @@
       <bpmndi:BPMNEdge id="Association_2_di" bpmnElement="Association_2">
         <di:waypoint x="450" y="195" />
         <di:waypoint x="470" y="250" />
-      </bpmndi:BPMEdge>
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
