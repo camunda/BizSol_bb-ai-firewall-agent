@@ -7,6 +7,7 @@ This directory contains a minimal BPMN example demonstrating how to use the `saf
 - **safeguard-agent-usage-example.bpmn** - Example BPMN that calls the safeguard-agent
 - **safeguard-agent.bpmn** - The main safeguard agent process
 - **safeguard-systemprompt.txt** - System prompt for the safeguard agent
+- **safeguard-systemprompt-feel.txt**: the same system prompt as a FEEL-escaped string, ready to paste into a BPMN expression.
 
 ## Usage Example
 
@@ -55,14 +56,17 @@ For a benign prompt like the example, you can expect:
    - `safeguard-agent.bpmn`
    - `safeguard-agent-usage-example.bpmn`
 
-2. Start a process instance of `safeguard-agent-usage-example` with the minimal required variable:
+1. Start the Job Worker in `/src/main/java/io/camunda/bizsol/bb/ai_firewall_agent/AIFirewallAgentApplication.java`
+  
+1. Start a process instance of `safeguard-agent-usage-example` with the minimal required variable:
+
    ```json
    {
      "userPromptToSafeguard": "What is the status of my insurance claim number IC-2024-001?"
    }
    ```
 
-3. The process will complete with the `safeGuardResult` variable containing the analysis.
+1. The process will complete with the `safeGuardResult` variable containing the analysis.
 
 ## Advanced Configuration
 

@@ -35,7 +35,7 @@ services:
       - maven-cache:/root/.m2
     command: mvn spring-boot:run 
     ports:
-      - "${AI_FIREWALL_AGENT_PORT:-8081}:8080"
+      - "${AI_FIREWALL_AGENT_PORT:-9090}:9090"
 
 volumes:
   maven-cache:
