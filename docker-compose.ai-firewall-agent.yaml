@@ -1,5 +1,5 @@
 x-spring-app: &spring-app
-  image: maven:3.9-eclipse-temurin-21 # includes Maven + JDK 21
+  image: maven:3.9-eclipse-temurin-25 # includes Maven + JDK 25
   extra_hosts:
     - "host.docker.internal:host-gateway"
   environment:
@@ -7,7 +7,7 @@ x-spring-app: &spring-app
     CAMUNDA_CLIENT_GRPC_ADDRESS: ${CAMUNDA_GRPC_ADDRESS:-http://host.docker.internal:26500}
     CAMUNDA_CLIENT_REST_ADDRESS: ${CAMUNDA_BASE_URL:-http://host.docker.internal:8080}
     SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-    SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+    # SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
     MAVEN_OPTS: "-Dmaven.repo.local=/root/.m2/repository"
 
     
@@ -27,31 +27,15 @@ x-spring-app: &spring-app
 
 
 services:
-  BizSol_bb-Verification-Agent:
+  ai-firewall-agent:
     <<: *spring-app
-    depends_on:
-      camunda-check:
-        condition: service_completed_successfully
     working_dir: /app
     volumes:
-      - ./src:/app
+      - .:/app
       - maven-cache:/root/.m2
     command: mvn spring-boot:run 
     ports:
       - "${AI_FIREWALL_AGENT_PORT:-8081}:8080"
-      - "${AI_FIREWALL_AGENT_LIVERELOAD_PORT:-35729}:35729"
-
-  # app2:
-  #   <<: *spring-app
-  #   working_dir: /app
-  #   volumes:
-  #     - ./spring-app-2:/app
-  #     - maven-cache:/root/.m2
-  #     - j9-cache:/cache
-  #   command: ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.devtools.restart.enabled=true"
-  #   ports:
-  #     - "${APP2_PORT:-8082}:8080"
-  #     - "${APP2_LIVERELOAD_PORT:-35730}:35729"
 
 volumes:
   maven-cache:
