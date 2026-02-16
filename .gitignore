@@ -1,4 +1,7 @@
 target/
+.env
+!.env.example
+maven-cache
 ### STS ###
 .apt_generated
 .classpath
