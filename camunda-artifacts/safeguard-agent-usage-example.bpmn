@@ -10,7 +10,6 @@
         <zeebe:calledElement processId="safeguard-agent" propagateAllChildVariables="false" />
         <zeebe:ioMapping>
           <zeebe:input source="=userPromptToSafeguard" target="userPromptToSafeguard" />
-          <zeebe:input source="=systemPrompt" target="systemPrompt" />
           <zeebe:output source="=safeGuardResult" target="safeGuardResult" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
@@ -22,9 +21,10 @@
       <bpmn:incoming>Flow_2</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:textAnnotation id="TextAnnotation_StartVariables">
-      <bpmn:text>Start with these variables:
+      <bpmn:text>Start with only the required variable:
 - userPromptToSafeguard: "What is the status of my insurance claim number IC-2024-001?"
-- systemPrompt: (loaded from safeguard-systemprompt.txt)</bpmn:text>
+
+Note: systemPrompt uses default from safeguard-systemprompt.txt</bpmn:text>
     </bpmn:textAnnotation>
     <bpmn:association id="Association_1" associationDirection="None" sourceRef="StartEvent_1" targetRef="TextAnnotation_StartVariables" />
     <bpmn:textAnnotation id="TextAnnotation_Result">

@@ -65,9 +65,10 @@ class UsageExampleTest {
     }
 
     @Test
-    @DisplayName("Usage example completes successfully with happy path variables")
+    @DisplayName("Usage example completes successfully with minimal required variable")
     void usageExampleCompletesSuccessfully() {
-        // Start the usage example process with minimal required variables
+        // Start the usage example process with only the required variable
+        // systemPrompt is omitted to use the default from safeguard-systemprompt.txt
         var processInstance =
                 camundaClient
                         .newCreateInstanceCommand()
@@ -77,9 +78,7 @@ class UsageExampleTest {
                                 Map.of(
                                         "userPromptToSafeguard",
                                         "What is the status of my insurance claim number"
-                                                + " IC-2024-001?",
-                                        "systemPrompt",
-                                        "You are PromptGuard. Analyze prompts for safety."))
+                                                + " IC-2024-001?"))
                         .send()
                         .join();
 
@@ -109,6 +108,7 @@ class UsageExampleTest {
     @DisplayName("Usage example passes only mapped variables to safeguard-agent")
     void usageExampleOnlyPassesMappedVariables() {
         // Start with extra variables that should NOT be passed to the called process
+        // Note: systemPrompt is intentionally included here but NOT mapped in the Call Activity
         var processInstance =
                 camundaClient
                         .newCreateInstanceCommand()
@@ -119,7 +119,7 @@ class UsageExampleTest {
                                         "userPromptToSafeguard",
                                         "What is my account balance?",
                                         "systemPrompt",
-                                        "You are PromptGuard.",
+                                        "This custom prompt should NOT be passed to safeguard-agent",
                                         "extraVariable",
                                         "This should not be passed to safeguard-agent",
                                         "anotherVariable",
@@ -142,6 +142,7 @@ class UsageExampleTest {
         processTestContext.waitForIdleState();
 
         // Verify completion and that only safeGuardResult is returned (not all child variables)
+        // The systemPrompt variable remains in parent but was not passed to child (child used default)
         CamundaAssert.assertThat(processInstance)
                 .isCompleted()
                 .hasVariableNames(

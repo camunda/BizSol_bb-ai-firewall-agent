@@ -20,14 +20,12 @@ The `safeguard-agent-usage-example.bpmn` demonstrates the minimal configuration 
 
 ### Input Variables
 
-The example requires only the essential variables:
+The example requires only the essential variable:
 
 - **userPromptToSafeguard** (required): The user prompt to be analyzed
   - Example: `"What is the status of my insurance claim number IC-2024-001?"`
-  
-- **systemPrompt** (optional): System prompt for the AI agent
-  - Default: Content from `safeguard-systemprompt.txt`
-  - In the example, this is explicitly passed to demonstrate the pattern
+
+**Note:** The `systemPrompt` variable is optional and defaults to the content from `safeguard-systemprompt.txt` in the safeguard-agent process. The example demonstrates the minimal configuration by not passing this variable.
 
 ### Output Variables
 
@@ -57,11 +55,10 @@ For a benign prompt like the example, you can expect:
    - `safeguard-agent.bpmn`
    - `safeguard-agent-usage-example.bpmn`
 
-2. Start a process instance of `safeguard-agent-usage-example` with variables:
+2. Start a process instance of `safeguard-agent-usage-example` with the minimal required variable:
    ```json
    {
-     "userPromptToSafeguard": "What is the status of my insurance claim number IC-2024-001?",
-     "systemPrompt": "<content from safeguard-systemprompt.txt>"
+     "userPromptToSafeguard": "What is the status of my insurance claim number IC-2024-001?"
    }
    ```
 
@@ -71,11 +68,12 @@ For a benign prompt like the example, you can expect:
 
 The safeguard-agent supports additional optional parameters that can be passed via the Call Activity:
 
+- **systemPrompt** (default: content from `safeguard-systemprompt.txt`): Custom system prompt for the AI agent
 - **maxTries** (default: 3): Maximum retry attempts for safeguard analysis
 - **minConfidence** (default: 0.95): Minimum confidence level required
 - **maxUserPromptSize** (default: 2000000): Maximum characters in user prompt
 
-These are intentionally omitted from the example to keep it minimal. Add them to the Call Activity's input mapping only if you need to override the defaults.
+These are intentionally omitted from the example to keep it minimal and demonstrate that only `userPromptToSafeguard` is required. Add them to the Call Activity's input mapping only if you need to override the defaults.
 
 ## Integration Notes
 
