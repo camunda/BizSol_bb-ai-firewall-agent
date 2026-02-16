@@ -1,6 +1,9 @@
 # AI Firewall Agent
 
-It takes a user prompt and safeguards against malicious intent.
+It takes a user prompt and safeguards against malicious intent.  
+A job worker transforms the Agent output to a proper JSON schema structure (see below).
+
+Camunda 8.8+ required!
 
 ## mandatory inputs
 
@@ -14,6 +17,8 @@ It takes a user prompt and safeguards against malicious intent.
 - complete the `Model provider` and `Model` sections of the `Safeguard Prompt` task
 
 ### optional
+
+- set the port the job worker is listening on via a variable in `.env`
 
 - if the targeted Camunda Version is >= `8.9`, the JSON converter worker can be substituted with the [`FEEL` expression `to json(value: Any)`](https://docs.camunda.io/docs/next/components/modeler/feel/builtin-functions/feel-built-in-functions-conversion/#to-jsonvalue)
 
@@ -47,3 +52,11 @@ Process has the variable `safeGuardResult` adhere to this schema:
   "confidence": 0.0
 }
 ```
+
+## Running
+
+1. Deploy the Camunda artifacts from `/camunda-artifacts` to a Camunda 8.8+ cluster
+2. Start or deploy the Process Application at `/src/main/java/io/camunda/bizsol/bb/ai_firewall_agent/AIFirewallAgentApplication.java` containing the Job Worker
+
+    - run the Application directly via `mvn spring-boot:run` or
+    - use the `docker-compose` file via `docker-compose -f docker-compose.ai-firewall-agent.yaml up`
