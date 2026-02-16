@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -130,9 +129,9 @@ abstract class LlmIntegrationTestBase {
     }
 
     /**
-     * Start a safeguard process instance with the given user prompt. Uses the default system
-     * prompt and sets {@code minConfidence} to 0.5 to avoid retry loops during testing (the LLM
-     * may return varying confidence levels).
+     * Start a safeguard process instance with the given user prompt. Uses the default system prompt
+     * and sets {@code minConfidence} to 0.5 to avoid retry loops during testing (the LLM may return
+     * varying confidence levels).
      *
      * @param userPrompt the user prompt to safeguard
      * @return the process instance event
