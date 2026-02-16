@@ -64,6 +64,7 @@ mvn spring-boot:run
 
 ## Important Notes for AI Agents
 
+- **Always run `mvn spotless:apply` before committing** to ensure code formatting compliance
 - BPMN artifacts in `camunda-artifacts/` are bundled as resources during build
 - Job type for AI agent connector: `io.camunda.agenticai:aiagent:1`
 - Test helper methods available in `ProcessTestBase` for completing/failing AI jobs
