@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.Variable;
+import io.camunda.client.exception.BpmnError;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ public class JsonConverterWorker {
             return Map.of("result", jsonObject);
         } catch (JsonProcessingException e) {
             logger.error("Failed to convert JSON string: {}", jsonString, e);
-            throw new RuntimeException("Invalid JSON format: " + e.getMessage(), e);
+            throw new BpmnError("jsonConversionError", "Invalid JSON format: " + e.getMessage());
         }
     }
 }
