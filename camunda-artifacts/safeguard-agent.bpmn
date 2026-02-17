@@ -87,7 +87,7 @@
         <zeebe:taskDefinition type="io.camunda.agenticai:aiagent:1" retries="3" />
         <zeebe:ioMapping>
           <zeebe:input source="openaiCompatible" target="provider.type" />
-          <zeebe:input source="http://localhost:11434/v1" target="provider.openaiCompatible.endpoint" />
+          <zeebe:input target="provider.openaiCompatible.endpoint" />
           <zeebe:input source="PT10M" target="provider.openaiCompatible.timeouts.timeout" />
           <zeebe:input target="provider.openaiCompatible.model.model" />
           <zeebe:input source="=_systemPrompt" target="data.systemPrompt.prompt" />
