@@ -9,6 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      models: read
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -28,7 +32,7 @@ jobs:
       
       - name: Run LLM integration tests
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: mvn failsafe:integration-test failsafe:verify -B -q
         continue-on-error: true
       

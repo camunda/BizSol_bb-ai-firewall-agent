@@ -161,38 +161,38 @@ LLM integration tests (`*IT.java` files) send actual user prompts through the sa
 
 ### LLM Provider
 
-Tests use **GitHub Models** (gpt-4o-mini) with authentication via `GITHUB_TOKEN`:
+Tests use **GitHub Models** (openai/gpt-4.1-mini) with authentication via `GITHUB_TOKEN`:
 
-- **Endpoint**: `https://models.inference.ai.github.com/v1`
-- **Model**: `gpt-4o-mini`
-- **Authentication**: `GITHUB_TOKEN` environment variable (available by default in GitHub Actions)
-- **Local testing**: Use `LLM_API_KEY` env var with any OpenAI-compatible API key
+- **Endpoint**: `https://models.github.ai/inference`
+- **Model**: `openai/gpt-4.1-mini`
+- **Authentication**: `GITHUB_TOKEN` environment variable — in CI, the workflow must declare `permissions: models: read` so the default token can access GitHub Models
+- **Local testing**: Set `GITHUB_TOKEN` env var to a PAT with `models:read` permission
 
 ### Running Locally
 
 ```bash
-# With GitHub token
-GITHUB_TOKEN=ghp_... mvn failsafe:integration-test -B
-
-# With any OpenAI-compatible API key
-LLM_API_KEY=sk-... mvn failsafe:integration-test -B
-
-# Or set in environment and run
+# Set your GitHub PAT (with models:read permission) and run
 export GITHUB_TOKEN=ghp_...
 mvn failsafe:integration-test -B
 ```
 
-If neither `GITHUB_TOKEN` nor `LLM_API_KEY` is set, tests are automatically skipped.
+If `GITHUB_TOKEN` is not set, tests are automatically skipped.
 
 ### Running in CI
 
-GitHub Actions automatically provides `GITHUB_TOKEN` in all workflow runs. The workflow explicitly sets it for the LLM integration test step:
+The GitHub Actions workflow grants `models: read` permission to the default `GITHUB_TOKEN`, which enables access to the GitHub Models inference API — no extra secrets required:
 
 ```yaml
-- name: Run LLM integration tests
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  run: mvn failsafe:integration-test failsafe:verify -B -q
+jobs:
+  test:
+    permissions:
+      contents: read
+      models: read
+    steps:
+      - name: Run LLM integration tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: mvn failsafe:integration-test failsafe:verify -B -q
 ```
 
 ### Adding New Prompt Test Cases

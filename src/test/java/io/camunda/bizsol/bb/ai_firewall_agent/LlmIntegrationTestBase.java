@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  *   <li>Connectors runtime enabled: {@code camunda.process-test.connectors-enabled=true}
  *   <li>LLM endpoint: {@code https://models.inference.ai.github.com/v1}
  *   <li>LLM model: {@code gpt-4o-mini}
- *   <li>Env var: Only {@code GITHUB_TOKEN} is respected
+ *   <li>Env var: {@code GITHUB_TOKEN} (with {@code models: read} permission in CI)
  *   <li>Assertion timeout: 3 minutes (real LLM calls can take 10-30s)
  * </ul>
  *
@@ -46,7 +47,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
         properties = {
             "camunda.process-test.connectors-enabled=true",
-            "camunda.process-test.connectors-secrets.LLM_API_KEY=${GITHUB_TOKEN:}"
+            "camunda.process-test.connectors-secrets.GITHUB_TOKEN=${GITHUB_TOKEN:}"
         })
 abstract class LlmIntegrationTestBase {
 
@@ -76,11 +77,17 @@ abstract class LlmIntegrationTestBase {
     @Autowired CamundaClient camundaClient;
 
     /**
-     * Before all tests: set a longer assertion timeout for real LLM calls. Real LLM calls can take
-     * 10-30 seconds, so we allow up to 3 minutes.
+     * Before all tests: verify that {@code GITHUB_TOKEN} is available, then set a longer assertion
+     * timeout for real LLM calls. Tests are skipped when {@code GITHUB_TOKEN} is not set. In CI,
+     * the workflow must declare {@code permissions: models: read} so the default token can access
+     * GitHub Models.
      */
     @BeforeAll
     static void configureCamundaAssert() {
+        String token = System.getenv("GITHUB_TOKEN");
+        Assumptions.assumeTrue(
+                token != null && !token.isBlank(),
+                "Skipping LLM integration tests: GITHUB_TOKEN is not set");
         CamundaAssert.setAssertionTimeout(Duration.ofMinutes(3));
     }
 
@@ -97,7 +104,7 @@ abstract class LlmIntegrationTestBase {
                                 "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
                                 "<zeebe:input source=\"https://models.github.ai/inference\""
                                         + " target=\"provider.openaiCompatible.endpoint\" />\n"
-                                        + "          <zeebe:input source=\"{{secrets.LLM_API_KEY}}\""
+                                        + "          <zeebe:input source=\"{{secrets.GITHUB_TOKEN}}\""
                                         + " target=\"provider.openaiCompatible.authentication.apiKey\""
                                         + " />"),
                         Replace.replace(
