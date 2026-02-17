@@ -89,18 +89,15 @@ abstract class LlmIntegrationTestBase {
                 BpmnFile.replace(
                         BPMN_SOURCE.toFile(),
                         Replace.replace(
-                                "http://localhost:11434/v1",
-                                "https://models.inference.ai.github.com/v1"),
-                        Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\"gpt-4o-mini\""
-                                        + " target=\"provider.openaiCompatible.model.model\" />"),
-                        Replace.replace(
                                 "<zeebe:input source=\"http://localhost:11434/v1\" target=\"provider.openaiCompatible.endpoint\" />",
                                 "<zeebe:input source=\"https://models.inference.ai.github.com/v1\""
                                         + " target=\"provider.openaiCompatible.endpoint\" />\n"
                                         + "          <zeebe:input source=\"={{secrets.LLM_API_KEY}}\""
-                                        + " target=\"provider.openaiCompatible.authentication.apiKey\" />"));
+                                        + " target=\"provider.openaiCompatible.authentication.apiKey\" />"),
+                        Replace.replace(
+                                "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
+                                "<zeebe:input source=\"gpt-4o-mini\""
+                                        + " target=\"provider.openaiCompatible.model.model\" />"));
 
         camundaClient
                 .newDeployResourceCommand()
