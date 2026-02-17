@@ -2,11 +2,13 @@ package io.camunda.bizsol.bb.ai_firewall_agent;
 
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import java.util.Map;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.Map;
 
 /**
  * LLM integration tests for safeguard prompt classification.
@@ -18,8 +20,7 @@ import org.junit.jupiter.api.Test;
  * <h3>Test execution</h3>
  *
  * <ul>
- *   <li>Maven: {@code mvn failsafe:integration-test} (requires {@code GITHUB_TOKEN} or {@code
- *       LLM_API_KEY})
+ *   <li>Maven: {@code mvn failsafe:integration-test} (requires {@code GITHUB_TOKEN})
  *   <li>CI: Runs automatically with {@code GITHUB_TOKEN} from GitHub Actions
  *   <li>Naming: {@code *IT.java} suffix triggers Maven Failsafe plugin
  * </ul>

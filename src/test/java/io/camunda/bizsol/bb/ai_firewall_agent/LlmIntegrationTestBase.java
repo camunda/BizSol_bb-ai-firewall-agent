@@ -7,26 +7,30 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Shared base class for LLM integration tests that use real LLM calls via GitHub Models.
  *
  * <p>Unlike {@link ProcessTestBase}, this class enables the connectors runtime to handle AI agent
- * jobs. Tests in this class make actual HTTP calls to GitHub Models (gpt-4o-mini) using {@code
- * GITHUB_TOKEN} or {@code LLM_API_KEY} environment variables.
+ * jobs. Tests in this class make actual HTTP calls to GitHub Models (gpt-4o-mini) using the {@code
+ * GITHUB_TOKEN} environment variable.
  *
- * <p>Tests are conditionally enabled when either {@code GITHUB_TOKEN} or {@code LLM_API_KEY} is
- * set. This allows graceful skipping in local environments without credentials.
+ * <p>Tests are conditionally enabled when {@code GITHUB_TOKEN} is set. This allows graceful
+ * skipping in local environments without credentials.
  *
  * <h3>Configuration</h3>
  *
@@ -34,7 +38,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  *   <li>Connectors runtime enabled: {@code camunda.process-test.connectors-enabled=true}
  *   <li>LLM endpoint: {@code https://models.inference.ai.github.com/v1}
  *   <li>LLM model: {@code gpt-4o-mini}
- *   <li>API key: {@code GITHUB_TOKEN} env var (via connector secret {@code LLM_API_KEY})
+ *   <li>Env var: Only {@code GITHUB_TOKEN} is respected
  *   <li>Assertion timeout: 3 minutes (real LLM calls can take 10-30s)
  * </ul>
  *
@@ -44,9 +48,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
         properties = {
             "camunda.process-test.connectors-enabled=true",
-            "camunda.process-test.connectors-secrets.LLM_API_KEY=${GITHUB_TOKEN:${LLM_API_KEY:}}"
+            "camunda.process-test.connectors-secrets.LLM_API_KEY=${GITHUB_TOKEN:}"
         })
 abstract class LlmIntegrationTestBase {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LlmIntegrationTestBase.class);
 
     // -- BPMN element IDs -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
@@ -92,22 +98,24 @@ abstract class LlmIntegrationTestBase {
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
                                 "<zeebe:input source=\"https://models.github.ai/inference\""
-                                        + " target=\"provider.openaiCompatible.endpoint\" />\n"
-                                        + "          <zeebe:input source=\"{{secrets.LLM_API_KEY}}\""
-                                        + " target=\"provider.openaiCompatible.authentication.apiKey\""
-                                        + " />"),
+                                    + " target=\"provider.openaiCompatible.endpoint\" />\n"
+                                    + "          <zeebe:input source=\"{{secrets.LLM_API_KEY}}\""
+                                    + " target=\"provider.openaiCompatible.authentication.apiKey\""
+                                    + " />"),
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
                                 "<zeebe:input source=\"openai/gpt-4.1-mini\""
                                         + " target=\"provider.openaiCompatible.model.model\" />"));
 
-        // --- temporary: dump the resulting BPMN for debugging ---
-        try {
-            Path tmp = Files.createTempFile("safeguard-agent-IT-", ".bpmn");
-            Bpmn.writeModelToFile(tmp.toFile(), model);
-            System.out.println("[LlmIntegrationTestBase] Deployed BPMN written to: " + tmp);
-        } catch (Exception e) {
-            System.err.println("[LlmIntegrationTestBase] Could not write debug BPMN: " + e);
+        // --- dump the resulting BPMN for debugging (skip in CI) ---
+        if (System.getenv("CI") == null) {
+            try {
+                Path tmp = Files.createTempFile("safeguard-agent-IT-", ".bpmn");
+                Bpmn.writeModelToFile(tmp.toFile(), model);
+                LOG.debug("Deployed BPMN written to: {}", tmp);
+            } catch (Exception e) {
+                LOG.warn("Could not write debug BPMN", e);
+            }
         }
 
         camundaClient
