@@ -84,12 +84,8 @@ jobs:
               body: comment
             });
       
-      - name: Fail if build failed
-        if: steps.build.outcome == 'failure'
-        run: exit 1
-      
       - name: Upload coverage reports
-        if: github.event_name == 'pull_request'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
@@ -97,3 +93,7 @@ jobs:
             target/site/jacoco/
             target/process-test-coverage/
           retention-days: 7
+      
+      - name: Fail if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
