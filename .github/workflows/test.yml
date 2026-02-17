@@ -92,6 +92,8 @@ jobs:
           path: |
             target/site/jacoco/
             target/process-test-coverage/
+            target/coverage-report/
+            target/failsafe-reports/
           retention-days: 7
       
       - name: Fail if build failed
