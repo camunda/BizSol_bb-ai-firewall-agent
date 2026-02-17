@@ -6,17 +6,15 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Shared base class for LLM integration tests that use real LLM calls via GitHub Models.
@@ -92,10 +90,10 @@ abstract class LlmIntegrationTestBase {
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
                                 "<zeebe:input source=\"https://models.github.ai/inference\""
-                                    + " target=\"provider.openaiCompatible.endpoint\" />\n"
-                                    + "          <zeebe:input source=\"{{secrets.LLM_API_KEY}}\""
-                                    + " target=\"provider.openaiCompatible.authentication.apiKey\""
-                                    + " />"),
+                                        + " target=\"provider.openaiCompatible.endpoint\" />\n"
+                                        + "          <zeebe:input source=\"{{secrets.LLM_API_KEY}}\""
+                                        + " target=\"provider.openaiCompatible.authentication.apiKey\""
+                                        + " />"),
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
                                 "<zeebe:input source=\"openai/gpt-4.1-mini\""
