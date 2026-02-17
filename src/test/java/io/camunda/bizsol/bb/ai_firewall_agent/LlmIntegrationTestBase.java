@@ -88,7 +88,7 @@ abstract class LlmIntegrationTestBase {
         Assumptions.assumeTrue(
                 token != null && !token.isBlank(),
                 "Skipping LLM integration tests: GITHUB_TOKEN is not set");
-        CamundaAssert.setAssertionTimeout(Duration.ofMinutes(3));
+        CamundaAssert.setAssertionTimeout(Duration.ofSeconds(90));
     }
 
     /**
@@ -110,7 +110,8 @@ abstract class LlmIntegrationTestBase {
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
                                 "<zeebe:input source=\"openai/gpt-4.1-mini\""
-                                        + " target=\"provider.openaiCompatible.model.model\" />"));
+                                        + " target=\"provider.openaiCompatible.model.model\" />"),
+                        Replace.replace("retries=\"3\"", "retries=\"1\""));
 
         // --- dump the resulting BPMN for debugging (skip in CI) ---
         if (System.getenv("CI") == null) {
@@ -169,7 +170,9 @@ abstract class LlmIntegrationTestBase {
                                 "systemPrompt",
                                 SYSTEM_PROMPT,
                                 "minConfidence",
-                                0.5))
+                                0.5,
+                                "maxTries",
+                                1))
                 .send()
                 .join();
     }
