@@ -4,12 +4,14 @@ import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile.Replace;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,7 +77,7 @@ abstract class LlmIntegrationTestBase {
      */
     @BeforeAll
     static void configureCamundaAssert() {
-        // CamundaAssert.setAssertionTimeout(Duration.ofMinutes(3));
+        CamundaAssert.setAssertionTimeout(Duration.ofMinutes(3));
     }
 
     /**
