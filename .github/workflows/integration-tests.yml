@@ -1,0 +1,79 @@
+name: Integration Tests (On-Demand)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for running integration tests'
+        required: false
+        default: 'Manual trigger'
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      models: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build and run integration tests with coverage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn clean verify -B -q
+        continue-on-error: true
+        id: build
+      
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          echo "## Integration Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if JaCoCo index exists
+          if [ -f target/site/jacoco/index.html ]; then
+            COVERAGE=$(grep -oP 'Total.*?\K\d+(?=%)' target/site/jacoco/index.html | head -1 || echo "N/A")
+            echo "### Java Code Coverage: ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Java Code Coverage: Not available" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check process test coverage
+          if [ -f target/coverage-report/report.json ]; then
+            PROCESS_COVERAGE=$(jq -r '.coverages[0].coverage * 100 | floor' target/coverage-report/report.json 2>/dev/null || echo "N/A")
+            PROCESS_ID=$(jq -r '.coverages[0].processDefinitionId' target/coverage-report/report.json 2>/dev/null || echo "N/A")
+            echo "### Process Test Coverage (${PROCESS_ID}): ${PROCESS_COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Process Test Coverage: Not available" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Detailed reports available in build artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger Reason:** ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-coverage-reports
+          path: |
+            target/site/jacoco/
+            target/process-test-coverage/
+            target/coverage-report/
+            target/failsafe-reports/
+            target/surefire-reports/
+          retention-days: 7
+      
+      - name: Fail if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
