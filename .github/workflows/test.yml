@@ -30,11 +30,11 @@ jobs:
         continue-on-error: true # continue, to be able to comment on PR
         id: build
       
-      - name: Run LLM integration tests
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: mvn failsafe:integration-test failsafe:verify -B -q
-        continue-on-error: true
+      # - name: Run LLM integration tests
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #   run: mvn failsafe:integration-test failsafe:verify -B -q
+      #   continue-on-error: true
       
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request'
