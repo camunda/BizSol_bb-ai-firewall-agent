@@ -3,14 +3,14 @@ package io.camunda.bizsol.bb.ai_firewall_agent;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests all escalation event paths in the safeguard-agent BPMN process.
@@ -120,6 +120,21 @@ class EscalationTest extends ProcessTestBase {
                             ACTIVITY_RETAIN_HISTORY,
                             ACTIVITY_REFINE_SYSTEM_PROMPT,
                             ESCALATION_MAX_ITERATIONS);
+
+            // Verify the low-confidence result was appended to safeGuardResultHistory
+            CamundaAssert.assertThat(processInstance)
+                    .hasVariableSatisfies(
+                            "safeGuardResultHistory",
+                            List.class,
+                            history -> {
+                                Assertions.assertThat(history).hasSize(1);
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> entry = (Map<String, Object>) history.get(0);
+                                Assertions.assertThat(entry.get("decision")).isEqualTo("allow");
+                                Assertions.assertThat(
+                                                ((Number) entry.get("confidence")).doubleValue())
+                                        .isEqualTo(0.3);
+                            });
         }
     }
 
