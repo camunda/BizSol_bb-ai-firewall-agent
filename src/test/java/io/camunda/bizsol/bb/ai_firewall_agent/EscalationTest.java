@@ -25,6 +25,8 @@ import org.springframework.boot.test.context.SpringBootTest;
  *   <li><b>safeguard_max-iterations-reached</b> – max retry count exhausted
  *   <li><b>safeguard_task-agent-failed</b> – AI agent task throws a BPMN error
  *   <li><b>safeguard_bad-agent-output</b> – LLM response missing required JSON fields
+ *   <li><b>safeguard_json-worker-error</b> – JSON converter worker fails to parse response (tested
+ *       in {@link JsonWorkerErrorTest})
  * </ol>
  */
 @SpringBootTest
@@ -102,7 +104,9 @@ class EscalationTest extends ProcessTestBase {
 
             // The JsonConverterWorker handles the json-converter job automatically.
             // After parsing, safeGuardResult.confidence = 0.3 < 0.95 →
-            // loops back → _current_try = 2 > _maxTries = 1 → escalation
+            //   confidence too low → "Retain history of safeGuard results" (script) →
+            //   "Refine system prompt" (script) → loops back to iteration check →
+            //   _current_try = 2 > _maxTries = 1 → escalation
             CamundaAssert.assertThat(processInstance)
                     .hasCompletedElements(ESCALATION_MAX_ITERATIONS);
         }
