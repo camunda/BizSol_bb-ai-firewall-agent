@@ -151,7 +151,7 @@
     <bpmn:sequenceFlow id="Flow_0yl024c" sourceRef="Gateway_0d4d9o9" targetRef="Event_safeGuardResult">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=(is defined(safeGuardResult.confidence) and safeGuardResult.confidence &gt;= _minConfidence) = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_0kpnkft" sourceRef="Gateway_0d4d9o9" targetRef="Activity_0snthod">
+    <bpmn:sequenceFlow id="Flow_0kpnkft" sourceRef="Gateway_0d4d9o9" targetRef="Activity_retain_history">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=(is defined(safeGuardResult.confidence) and safeGuardResult.confidence &gt;= _minConfidence) = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:intermediateThrowEvent id="Event_bad-agent-output">
@@ -191,8 +191,8 @@
       <bpmn:incoming>Flow_02um237</bpmn:incoming>
       <bpmn:outgoing>Flow_0jfblxe</bpmn:outgoing>
     </bpmn:scriptTask>
-    <bpmn:sequenceFlow id="Flow_02um237" sourceRef="Activity_0snthod" targetRef="Activity_refine_system_prompt" />
-    <bpmn:scriptTask id="Activity_0snthod" name="Retain history of safeGuard results">
+    <bpmn:sequenceFlow id="Flow_02um237" sourceRef="Activity_retain_history" targetRef="Activity_refine_system_prompt" />
+    <bpmn:scriptTask id="Activity_retain_history" name="Retain history of safeGuard results">
       <bpmn:extensionElements>
         <zeebe:script expression="=if is defined(safeGuardResultHistory) then &#10;  append(safeGuardResultHistory, safeGuardResult)&#10;else &#10;  [safeGuardResult]&#10;" resultVariable="safeGuardResultHistory" />
       </bpmn:extensionElements>
@@ -290,12 +290,12 @@
       <bpmndi:BPMNShape id="Event_064lcy8_di" bpmnElement="Event_json-worker-error">
         <dc:Bounds x="892" y="462" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1bvrb5r_di" bpmnElement="Activity_0snthod">
-        <dc:Bounds x="880" y="520" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ya5qgn_di" bpmnElement="Activity_refine_system_prompt">
         <dc:Bounds x="640" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1bvrb5r_di" bpmnElement="Activity_retain_history">
+        <dc:Bounds x="880" y="520" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0bwbzo7_di" bpmnElement="TextAnnotation_0bwbzo7">
         <dc:Bounds x="160" y="40" width="363" height="190" />
@@ -390,6 +390,10 @@
         <di:waypoint x="500" y="350" />
         <di:waypoint x="535" y="350" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02um237_di" bpmnElement="Flow_02um237">
+        <di:waypoint x="880" y="560" />
+        <di:waypoint x="740" y="560" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_030ox7l_di" bpmnElement="Association_030ox7l">
         <di:waypoint x="285" y="333" />
         <di:waypoint x="249" y="230" />
@@ -397,10 +401,6 @@
       <bpmndi:BPMNEdge id="Association_0g2yaw3_di" bpmnElement="Association_0g2yaw3">
         <di:waypoint x="1278" y="332" />
         <di:waypoint x="1278" y="240" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_02um237_di" bpmnElement="Flow_02um237">
-        <di:waypoint x="880" y="560" />
-        <di:waypoint x="740" y="560" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

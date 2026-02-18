@@ -3,12 +3,14 @@ package io.camunda.bizsol.bb.ai_firewall_agent;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import java.util.HashMap;
-import java.util.Map;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Tests all escalation event paths in the safeguard-agent BPMN process.
@@ -44,6 +46,12 @@ class EscalationTest extends ProcessTestBase {
 
     /** Escalation: LLM output not matching expected JSON schema */
     private static final String ESCALATION_BAD_AGENT_OUTPUT = "Event_bad-agent-output";
+
+    /** Script task: retains safeGuardResult history when confidence is insufficient */
+    private static final String ACTIVITY_RETAIN_HISTORY = "Activity_retain_history";
+
+    /** Script task: appends confidence-refinement directive to system prompt */
+    private static final String ACTIVITY_REFINE_SYSTEM_PROMPT = "Activity_refine_system_prompt";
 
     // ╔══════════════════════════════════════════════════════════════════════════╗
     // ║ Escalation: safeguard_max-user-input-exceeded                           ║
@@ -108,7 +116,10 @@ class EscalationTest extends ProcessTestBase {
             //   "Refine system prompt" (script) → loops back to iteration check →
             //   _current_try = 2 > _maxTries = 1 → escalation
             CamundaAssert.assertThat(processInstance)
-                    .hasCompletedElements(ESCALATION_MAX_ITERATIONS);
+                    .hasCompletedElements(
+                            ACTIVITY_RETAIN_HISTORY,
+                            ACTIVITY_REFINE_SYSTEM_PROMPT,
+                            ESCALATION_MAX_ITERATIONS);
         }
     }
 
