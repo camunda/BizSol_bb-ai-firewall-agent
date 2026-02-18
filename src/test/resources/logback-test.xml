@@ -7,20 +7,25 @@
 <configuration>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- Suppress known noisy RDBMS history-cleanup error from Camunda container -->
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>MessageSubscriptionMapper.updateHistoryCleanupDate</substring>
+        </filter>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%-40.40logger{39}) │ %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- ─── Silence framework noise in tests ─── -->
+    <!-- Silence framework noise in tests -->
     <logger name="org.springframework"             level="WARN" />
-    <logger name="io.camunda.client"              level="WARN" />
-    <logger name="io.camunda.zeebe"               level="WARN" />
+    <logger name="io.camunda.client"               level="WARN" />
+    <logger name="io.camunda.zeebe"                level="ERROR" />
     <logger name="io.camunda.process.test"         level="DEBUG" />
+    <logger name="io.camunda.connector"            level="WARN" />
 
-    <!-- Testcontainers / Docker – extremely chatty -->
+    <!-- Testcontainers / Docker -->
     <logger name="org.testcontainers"              level="WARN" />
-    <logger name="tc"                              level="WARN" />
+    <logger name="tc"                              level="ERROR" />
     <logger name="com.github.dockerjava"           level="WARN" />
 
     <!-- gRPC / Netty -->

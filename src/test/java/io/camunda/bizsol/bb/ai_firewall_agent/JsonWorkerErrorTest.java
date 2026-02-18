@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * throws a {@link io.camunda.client.exception.BpmnError} with code {@code jsonConversionError}. The
  * boundary error event ({@code Event_errorJsonWorker}) on the json-converter service task catches
  * this and routes to the {@code safeguard_json-worker-error} escalation throw event ({@code
- * Event_04d5nay}).
+ * Event_json-worker-error}).
  */
 @SpringBootTest
 @CamundaSpringProcessTest
