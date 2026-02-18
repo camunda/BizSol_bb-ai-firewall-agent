@@ -47,6 +47,14 @@ You can supply them to the Process Instance or set them directly in `safeguard-a
 - `minConfidence` (float, 0.00 .. 1.00): for minimal confidence to be a trusted decision; **default**: 0.95
 - `maxUserPromptSize` (int): maximum character size for user prompt (== input); **default**: 2000000 (2 million)
 
+### Confidence refinement loop
+
+When the LLM returns a valid safeguard result but the confidence score falls below `minConfidence`, the process automatically:
+
+1. **Retains the result history** – the current `safeGuardResult` is appended to `safeGuardResultHistory` for auditability.
+2. **Refines the system prompt** – a `CONFIDENCE REFINEMENT DIRECTIVE` is appended to the system prompt, instructing the LLM to re-examine its assessment with deeper analysis and the previous result as context (see `safeguard-confidence-refinement.txt` for the template).
+3. **Loops back** to the iteration check – if `_current_try` ≤ `_maxTries`, the refined prompt is sent again; otherwise the `safeguard_max-iterations-reached` escalation fires.
+
 ## JSON schema output
 
 Process has the result variable `safeGuardResult` adhere to this schema:
@@ -81,12 +89,13 @@ The `/camunda-artifacts` directory contains:
 | `safeguard-agent-usage-example.bpmn` | Optional. Example BPMN that calls the safeguard agent via a Call Activity. See [README-usage-example.md](camunda-artifacts/README-usage-example.md). |
 | `safeguard-systemprompt.txt` | The system prompt used by the safeguard agent (plain text, for reference). |
 | `safeguard-systemprompt-feel.txt` | The same system prompt as a FEEL-escaped string, ready to paste into a BPMN expression. |
+| `safeguard-confidence-refinement.txt` | Template for the confidence refinement directive appended to the system prompt when confidence is below threshold. |
 
 ## Running
 
-### 1. Deploy the BPMN to Camunda
+### 1. Customize and Deploy the BPMN to Camunda
 
-Deploy **at minimum** `safeguard-agent.bpmn` from `/camunda-artifacts` to your Camunda 8.8+ cluster.
+Customize and Deploy **at minimum** `safeguard-agent.bpmn` from `/camunda-artifacts` to your Camunda 8.8+ cluster.
 
 ### 2. Connect the Job Worker to the Camunda cluster
 
@@ -145,7 +154,9 @@ The build enforces:
 - **60 %** BPMN path coverage (via `camunda-process-test`)
 - **80 %** line coverage (via JaCoCo)
 
-## LLM Integration Tests (IT)
+## (WIP) LLM Integration Tests (IT)
+
+⚠️ This is a work in progress and not finished yet - look, don't touch :)
 
 End-to-end integration tests that validate prompt classification with real LLM calls.
 

@@ -21,18 +21,22 @@ The `safeguard-agent-usage-example.bpmn` demonstrates the minimal configuration 
 
 ### Input Variables
 
-The example requires only the essential variable:
+The Call Activity maps both required and optional variables:
 
 - **userPromptToSafeguard** (required): The user prompt to be analyzed
   - Example: `"What is the status of my insurance claim number IC-2024-001?"`
+- **minConfidence** (optional): Minimum confidence level required; **default**: 0.95
+- **maxTries** (optional): Maximum retry attempts for safeguard analysis; **default**: 3
+- **maxUserPromptSize** (optional): Maximum characters in user prompt; **default**: 2000000
 
 **Note:** The `systemPrompt` variable is optional and defaults to a comprehensive prompt guard template embedded in the safeguard-agent process (see `safeguard-systemprompt-feel.txt`). The example demonstrates the minimal configuration by not passing this variable.
 
 ### Output Variables
 
-The Call Activity maps only the essential output:
+The Call Activity maps the following outputs:
 
 - **safeGuardResult**: Contains the safeguard analysis result as a JSON object
+- **error**: Contains error details if a BPMN error occurred in the safeguard agent
 
 ### Expected Output (Happy Path)
 
@@ -50,6 +54,21 @@ For a benign prompt like the example, you can expect:
 }
 ```
 
+## Escalation and Error Handling
+
+The usage example includes **event subprocesses** that catch all escalation events thrown by the safeguard agent. Each escalation is caught and converted into a BPMN error (creating an incident for operator review):
+
+| Event Subprocess | Escalation Code | Trigger |
+|---|---|---|
+| User Prompt too large | `safeguard_max-user-input-exceeded` | User prompt exceeds `maxUserPromptSize` |
+| Max Iterations reached | `safeguard_max-iterations-reached` | Retry count exhausted without sufficient confidence |
+| Task Agent failed | `safeguard_task-agent-failed` | AI agent connector throws a BPMN error |
+| Json Worker error | `safeguard_json-worker-error` | JSON converter worker fails to parse LLM response |
+| Bad Agent output | `safeguard_bad-agent-output` | LLM response missing required `decision`/`confidence` fields |
+| Generic catch-all | _(any)_ | Catches any other escalation from the Call Activity |
+
+You can customize these subprocesses to implement your own error handling strategy (e.g., logging, notifications, retry logic) instead of creating incidents.
+
 ## How to Deploy and Run
 
 1. Deploy both BPMN files to your Camunda 8 cluster:
@@ -58,7 +77,7 @@ For a benign prompt like the example, you can expect:
 
 1. Start the Job Worker in `/src/main/java/io/camunda/bizsol/bb/ai_firewall_agent/AIFirewallAgentApplication.java`
   
-1. Start a process instance of `safeguard-agent-usage-example` with the minimal required variable:
+1. Start a process instance of `safeguard-agent-usage` with the minimal required variable:
 
    ```json
    {
@@ -70,14 +89,14 @@ For a benign prompt like the example, you can expect:
 
 ## Advanced Configuration
 
-The safeguard-agent supports additional optional parameters that can be passed via the Call Activity:
+The safeguard-agent supports additional optional parameters. The usage example already maps these via the Call Activity input:
 
 - **systemPrompt** (default: content from `safeguard-systemprompt.txt`): Custom system prompt for the AI agent
 - **maxTries** (default: 3): Maximum retry attempts for safeguard analysis
 - **minConfidence** (default: 0.95): Minimum confidence level required
 - **maxUserPromptSize** (default: 2000000): Maximum characters in user prompt
 
-These are intentionally omitted from the example to keep it minimal and demonstrate that only `userPromptToSafeguard` is required. Add them to the Call Activity's input mapping only if you need to override the defaults.
+To override the defaults, supply these variables when starting the process instance.
 
 ## Integration Notes
 
