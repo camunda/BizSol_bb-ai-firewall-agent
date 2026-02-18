@@ -151,7 +151,7 @@
     <bpmn:sequenceFlow id="Flow_0yl024c" sourceRef="Gateway_0d4d9o9" targetRef="Event_safeGuardResult">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=(is defined(safeGuardResult.confidence) and safeGuardResult.confidence &gt;= _minConfidence) = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_0kpnkft" sourceRef="Gateway_0d4d9o9" targetRef="Activity_refine_system_prompt">
+    <bpmn:sequenceFlow id="Flow_0kpnkft" sourceRef="Gateway_0d4d9o9" targetRef="Activity_0snthod">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=(is defined(safeGuardResult.confidence) and safeGuardResult.confidence &gt;= _minConfidence) = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:intermediateThrowEvent id="Event_bad-agent-output">
@@ -188,8 +188,16 @@
       <bpmn:extensionElements>
         <zeebe:script expression="=_systemPrompt + &#34;\n\nCONFIDENCE REFINEMENT DIRECTIVE (activated because your previous assessment scored &#34; + string(safeGuardResult.confidence) + &#34;):\n\nYour previous confidence of &#34; + string(safeGuardResult.confidence) + &#34; is below the required threshold of &#34; + string(_minConfidence) + &#34;. Re-evaluate the prompt with deeper analysis:\n\n1) Re-examine each clause you identified during decomposition — are there signals you dismissed too quickly or ambiguities you can now resolve?\n2) If the low confidence stems from mixed signals, explicitly weigh the strength of each signal and state which ones dominate and why.\n3) If the low confidence stems from ambiguity, consider the most probable intent given the business context and state your reasoning.\n4) Provide at least one additional piece of evidence (or explicitly confirm no further evidence exists) beyond your previous assessment.\n5) Your revised confidence MUST reflect genuine analytical certainty — do not inflate it artificially. However, the additional analysis above should allow you to commit more decisively.\n\nPrevious assessment for reference:\n- decision: &#34; + safeGuardResult.decision + &#34;\n- confidence: &#34; + string(safeGuardResult.confidence) + &#34;\n- risk_labels: &#34; + string join(safeGuardResult.risk_labels, &#34;, &#34;) + &#34;\n- reasons: &#34; + string join(safeGuardResult.reasons, &#34;; &#34;) + &#34;\n- evidence: &#34; + string join(safeGuardResult.evidence, &#34;; &#34;)" resultVariable="_systemPrompt" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0kpnkft</bpmn:incoming>
+      <bpmn:incoming>Flow_02um237</bpmn:incoming>
       <bpmn:outgoing>Flow_0jfblxe</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_02um237" sourceRef="Activity_0snthod" targetRef="Activity_refine_system_prompt" />
+    <bpmn:scriptTask id="Activity_0snthod" name="Retain history of safeGuard results">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=if is defined(safeGuardResultHistory) then &#10;  append(safeGuardResultHistory, safeGuardResult)&#10;else &#10;  [safeGuardResult]&#10;" resultVariable="safeGuardResultHistory" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0kpnkft</bpmn:incoming>
+      <bpmn:outgoing>Flow_02um237</bpmn:outgoing>
     </bpmn:scriptTask>
     <bpmn:textAnnotation id="TextAnnotation_0bwbzo7">
       <bpmn:text>- `userPromptToSafeguard` (string) for user prompt; **default**: null
@@ -215,12 +223,12 @@
   </bpmn:message>
   <bpmn:error id="Error_1ca1upt" name="safeGuardAgentError" errorCode="400" />
   <bpmn:escalation id="Escalation_139t4p4" name="primary AI failed" escalationCode="&#34;TASK_AGENT_FAILED&#34;" />
-  <bpmn:escalation id="Escalation_15ho2md" name="safeguard_max-iterations-reached" escalationCode="&#34;safeguard_max-iterations-reached&#34;" />
-  <bpmn:escalation id="Escalation_0mq1k79" name="safeguard_task-agent-failed" escalationCode="&#34;safeguard_task-agent-failed&#34;" />
-  <bpmn:escalation id="Escalation_0fl41u4" name="safeguard_bad-agent-output" escalationCode="&#34;safeguard_bad-agent-output&#34;" />
-  <bpmn:escalation id="Escalation_0topi1v" name="safeguard_max-user-input-exceeded" escalationCode="&#34;safeguard_max-user-input-exceeded&#34;" />
+  <bpmn:escalation id="Escalation_15ho2md" name="safeguard_max-iterations-reached" escalationCode="safeguard_max-iterations-reached" />
+  <bpmn:escalation id="Escalation_0mq1k79" name="safeguard_task-agent-failed" escalationCode="safeguard_task-agent-failed" />
+  <bpmn:escalation id="Escalation_0fl41u4" name="safeguard_bad-agent-output" escalationCode="safeguard_bad-agent-output" />
+  <bpmn:escalation id="Escalation_0topi1v" name="safeguard_max-user-input-exceeded" escalationCode="safeguard_max-user-input-exceeded" />
   <bpmn:error id="Error_0spp02z" name="jsonConversionError" errorCode="jsonConversionError" />
-  <bpmn:escalation id="Escalation_2d9sbdf" name="safeguard_json-worker-error" escalationCode="&#34;safeguard_json-worker-error&#34;" />
+  <bpmn:escalation id="Escalation_2d9sbdf" name="safeguard_json-worker-error" escalationCode="safeguard_json-worker-error" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="safeguard-agent">
       <bpmndi:BPMNShape id="Activity_1xiw17u_di" bpmnElement="Activity_1thd7s5">
@@ -282,8 +290,12 @@
       <bpmndi:BPMNShape id="Event_064lcy8_di" bpmnElement="Event_json-worker-error">
         <dc:Bounds x="892" y="462" width="36" height="36" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1bvrb5r_di" bpmnElement="Activity_0snthod">
+        <dc:Bounds x="880" y="520" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ya5qgn_di" bpmnElement="Activity_refine_system_prompt">
-        <dc:Bounds x="750" y="520" width="100" height="80" />
+        <dc:Bounds x="640" y="520" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0bwbzo7_di" bpmnElement="TextAnnotation_0bwbzo7">
         <dc:Bounds x="160" y="40" width="363" height="190" />
@@ -356,7 +368,7 @@
       <bpmndi:BPMNEdge id="Flow_0kpnkft_di" bpmnElement="Flow_0kpnkft">
         <di:waypoint x="1170" y="375" />
         <di:waypoint x="1170" y="560" />
-        <di:waypoint x="850" y="560" />
+        <di:waypoint x="980" y="560" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_036jkrd_di" bpmnElement="Flow_036jkrd">
         <di:waypoint x="435" y="350" />
@@ -372,6 +384,12 @@
         <di:waypoint x="870" y="480" />
         <di:waypoint x="892" y="480" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jfblxe_di" bpmnElement="Flow_0jfblxe">
+        <di:waypoint x="640" y="560" />
+        <di:waypoint x="500" y="560" />
+        <di:waypoint x="500" y="350" />
+        <di:waypoint x="535" y="350" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_030ox7l_di" bpmnElement="Association_030ox7l">
         <di:waypoint x="285" y="333" />
         <di:waypoint x="249" y="230" />
@@ -380,11 +398,9 @@
         <di:waypoint x="1278" y="332" />
         <di:waypoint x="1278" y="240" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0jfblxe_di" bpmnElement="Flow_0jfblxe">
-        <di:waypoint x="750" y="560" />
-        <di:waypoint x="500" y="560" />
-        <di:waypoint x="500" y="350" />
-        <di:waypoint x="535" y="350" />
+      <bpmndi:BPMNEdge id="Flow_02um237_di" bpmnElement="Flow_02um237">
+        <di:waypoint x="880" y="560" />
+        <di:waypoint x="740" y="560" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
