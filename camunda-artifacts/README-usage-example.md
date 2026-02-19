@@ -2,6 +2,7 @@
 
 This directory contains a minimal BPMN example demonstrating how to use the `safeguard-agent.bpmn` process via a Call Activity.
 
+![[safeguard-agent.png]]
 
 ## Files
 
