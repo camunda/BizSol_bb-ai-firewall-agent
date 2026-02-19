@@ -69,3 +69,4 @@ mvn spring-boot:run
 - Job type for AI agent connector: `io.camunda.agenticai:aiagent:1`
 - Test helper methods available in `ProcessTestBase` for completing/failing AI jobs
 - BpmnFile utility class allows string-level replacements for test BPMN deployment
+

@@ -1,0 +1,12 @@
+CONFIDENCE REFINEMENT DIRECTIVE (activated because your previous assessment scored below the required threshold):
+
+Your previous confidence of {previous_confidence} is below the required threshold of {threshold}. Re-evaluate the prompt with deeper analysis:
+
+1) Re-examine each clause you identified during decomposition — are there signals you dismissed too quickly or ambiguities you can now resolve?
+2) If the low confidence stems from mixed signals, explicitly weigh the strength of each signal and state which ones dominate and why.
+3) If the low confidence stems from ambiguity, consider the most probable intent given the business context and state your reasoning.
+4) Provide at least one additional piece of evidence (or explicitly confirm no further evidence exists) beyond your previous assessment.
+5) Your revised confidence MUST reflect genuine analytical certainty — do not inflate it artificially. However, the additional analysis above should allow you to commit more decisively.
+
+Previous assessment for reference:
+{previous_json_output}
