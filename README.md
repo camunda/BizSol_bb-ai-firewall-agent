@@ -3,7 +3,7 @@
 It takes a user prompt and safeguards against malicious intent.  
 A job worker transforms the Agent output to a proper JSON schema structure (see below).
 
-!(AI Firewall Agent)[camunda-artifacts/safeguard-agent.png]
+![AI Firewall Agent](camunda-artifacts/safeguard-agent.png)
 
 ## Prerequisites
 
