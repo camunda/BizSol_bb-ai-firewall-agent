@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.43.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.44.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:process id="safeguard-agent-usage" name="Safeguard Agent Usage Example" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
@@ -58,7 +58,7 @@
       <bpmn:sequenceFlow id="Flow_0dpglrq" sourceRef="Event_max-iterations-reached" targetRef="Event_1iljptb" />
     </bpmn:subProcess>
     <bpmn:subProcess id="Activity_1p32q28" triggeredByEvent="true">
-      <bpmn:startEvent id="Event_task-agent-failed" name="User Prompt too large">
+      <bpmn:startEvent id="Event_task-agent-failed" name="AI Agent Failed">
         <bpmn:outgoing>Flow_0qte4m9</bpmn:outgoing>
         <bpmn:escalationEventDefinition id="EscalationEventDefinition_1j1cx41" escalationRef="Escalation_37b41id" />
       </bpmn:startEvent>
@@ -69,7 +69,7 @@
       <bpmn:sequenceFlow id="Flow_0qte4m9" sourceRef="Event_task-agent-failed" targetRef="Event_13jpl3c" />
     </bpmn:subProcess>
     <bpmn:subProcess id="Activity_0tak9fv" triggeredByEvent="true">
-      <bpmn:startEvent id="Event_json-worker-error" name="Json Worker error">
+      <bpmn:startEvent id="Event_json-worker-error" name="JSON Worker error">
         <bpmn:outgoing>Flow_1t976vm</bpmn:outgoing>
         <bpmn:escalationEventDefinition id="EscalationEventDefinition_0sky7zn" escalationRef="Escalation_2dprnft" />
       </bpmn:startEvent>
@@ -132,25 +132,6 @@ Note: systemPrompt is optional; defaults to embedded template in safeguard-agent
           <dc:Bounds x="420" y="142" width="63" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1qyxx56" bpmnElement="Activity_0nrpgz5" isExpanded="true">
-        <dc:Bounds x="150" y="440" width="295" height="140" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1e4wo92" bpmnElement="Event_max-user-input-exceeded">
-        <dc:Bounds x="187" y="482" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="165" y="525" width="81" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_16w8si9" bpmnElement="Event_1baukk3">
-        <dc:Bounds x="367" y="482" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="341" y="525" width="88" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="BPMNEdge_0dolcgi" bpmnElement="Flow_09683xp">
-        <di:waypoint x="223" y="500" />
-        <di:waypoint x="367" y="500" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Activity_0zp9oao_di" bpmnElement="Activity_0zp9oao" isExpanded="true">
         <dc:Bounds x="490" y="440" width="295" height="140" />
       </bpmndi:BPMNShape>
@@ -169,6 +150,25 @@ Note: systemPrompt is optional; defaults to embedded template in safeguard-agent
       <bpmndi:BPMNEdge id="Flow_1uajkqf_di" bpmnElement="Flow_1uajkqf">
         <di:waypoint x="563" y="500" />
         <di:waypoint x="707" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BPMNShape_1qyxx56" bpmnElement="Activity_0nrpgz5" isExpanded="true">
+        <dc:Bounds x="150" y="440" width="295" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1e4wo92" bpmnElement="Event_max-user-input-exceeded">
+        <dc:Bounds x="187" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="165" y="525" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_16w8si9" bpmnElement="Event_1baukk3">
+        <dc:Bounds x="367" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="341" y="525" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_0dolcgi" bpmnElement="Flow_09683xp">
+        <di:waypoint x="223" y="500" />
+        <di:waypoint x="367" y="500" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="BPMNShape_0ao5067" bpmnElement="Activity_1fk0gob" isExpanded="true">
         <dc:Bounds x="151" y="600" width="295" height="140" />
@@ -195,7 +195,7 @@ Note: systemPrompt is optional; defaults to embedded template in safeguard-agent
       <bpmndi:BPMNShape id="BPMNShape_1pjj8l5" bpmnElement="Event_task-agent-failed">
         <dc:Bounds x="187" y="802" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="165" y="845" width="81" height="27" />
+          <dc:Bounds x="168" y="845" width="75" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_07s1nne" bpmnElement="Event_13jpl3c">
@@ -214,7 +214,7 @@ Note: systemPrompt is optional; defaults to embedded template in safeguard-agent
       <bpmndi:BPMNShape id="BPMNShape_0zf0wqo" bpmnElement="Event_json-worker-error">
         <dc:Bounds x="187" y="962" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="162" y="1005" width="88" height="14" />
+          <dc:Bounds x="172" y="1005" width="68" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_0gdbyjt" bpmnElement="Event_1a6l2i7">
