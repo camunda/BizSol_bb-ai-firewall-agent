@@ -1,4 +1,4 @@
-# Camunda Business Solution Communication Agent
+# Camunda Business Solution Firewall Agent
 
 ## Commit Message Guidelines
 
