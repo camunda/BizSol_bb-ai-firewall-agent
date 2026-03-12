@@ -2,17 +2,32 @@ package io.camunda.bizsol.bb.ai_firewall_agent;
 
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 
 /**
  * LLM integration tests for safeguard prompt classification.
  *
- * <p>These tests send real user prompts through the safeguard-agent BPMN process using GitHub
- * Models (gpt-4o-mini) via the Camunda Process Test connectors runtime. Each test validates that
- * the LLM correctly classifies prompts as {@code allow}, {@code warn}, or {@code block}.
+ * <p>Tests are auto-discovered from prompt files in {@code src/test/resources/prompts/} matching
+ * the pattern {@code safeguard-<category>-<name>.txt}. To add a new test case, simply drop a new
+ * text file following that naming convention.
+ *
+ * <p>Supported categories: {@code block}, {@code warn}, {@code allow}. The category extracted from
+ * the filename is used as the expected decision.
  *
  * <h3>Test execution</h3>
  *
@@ -27,103 +42,64 @@ import org.junit.jupiter.api.Test;
 @CamundaSpringProcessTest
 class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
 
-    // ╔══════════════════════════════════════════════════════════════════════════╗
-    // ║ Block Decisions                                                         ║
-    // ╚══════════════════════════════════════════════════════════════════════════╝
+    private static final Path PROMPTS_DIR = Path.of("src/test/resources/prompts");
+    private static final Pattern PROMPT_FILE_PATTERN =
+            Pattern.compile("safeguard-(block|warn|allow)-(.+)\\.txt");
 
-    @Test
-    @DisplayName("Blocks prompt injection attempt")
-    void blocksPromptInjection() {
-        assertDecision("safeguard-block-injection.txt", "block");
+    @TestFactory
+    Collection<DynamicContainer> safeguardClassification() {
+        Map<String, List<Path>> byCategory = discoverPromptFiles();
+
+        Assertions.assertThat(byCategory)
+                .as("Expected prompt files for at least one category in %s", PROMPTS_DIR)
+                .isNotEmpty();
+
+        List<DynamicContainer> containers = new ArrayList<>();
+        for (var entry : byCategory.entrySet()) {
+            String category = entry.getKey();
+            List<DynamicTest> tests =
+                    entry.getValue().stream()
+                            .map(
+                                    file -> {
+                                        String name = testDisplayName(file);
+                                        return DynamicTest.dynamicTest(
+                                                name,
+                                                () ->
+                                                        assertDecision(
+                                                                file.getFileName().toString(),
+                                                                category));
+                                    })
+                            .toList();
+            containers.add(DynamicContainer.dynamicContainer(category, tests));
+        }
+        return containers;
     }
 
-    @Test
-    @DisplayName("Blocks jailbreak attempt")
-    void blocksJailbreakAttempt() {
-        assertDecision("safeguard-block-jailbreak.txt", "block");
+    // ── helpers ─────────────────────────────────────────────────────────────
+
+    private static Map<String, List<Path>> discoverPromptFiles() {
+        Map<String, List<Path>> byCategory = new TreeMap<>();
+        try (DirectoryStream<Path> stream =
+                Files.newDirectoryStream(PROMPTS_DIR, "safeguard-*.txt")) {
+            for (Path file : stream) {
+                Matcher m = PROMPT_FILE_PATTERN.matcher(file.getFileName().toString());
+                if (m.matches()) {
+                    byCategory.computeIfAbsent(m.group(1), k -> new ArrayList<>()).add(file);
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot scan prompt directory " + PROMPTS_DIR, e);
+        }
+        return byCategory;
     }
 
-    @Test
-    @DisplayName("Blocks harmful intent")
-    void blocksHarmfulIntent() {
-        assertDecision("safeguard-block-harmful.txt", "block");
+    private static String testDisplayName(Path file) {
+        Matcher m = PROMPT_FILE_PATTERN.matcher(file.getFileName().toString());
+        if (m.matches()) {
+            return m.group(2).replace('-', ' ');
+        }
+        return file.getFileName().toString();
     }
-
-    @Test
-    @DisplayName("Blocks data exfiltration attempt")
-    void blocksDataExfiltration() {
-        assertDecision("safeguard-block-exfiltration.txt", "block");
-    }
-
-    @Test
-    @DisplayName("Blocks tool manipulation attempt")
-    void blocksToolManipulation() {
-        assertDecision("safeguard-block-toolmanipulation.txt", "block");
-    }
-
-    @Test
-    @DisplayName("Blocks threatening message")
-    void blocksThreateningMessage() {
-        assertDecision("safeguard-block-threat.txt", "block");
-    }
-
-    // ╔══════════════════════════════════════════════════════════════════════════╗
-    // ║ Warn Decisions                                                          ║
-    // ╚══════════════════════════════════════════════════════════════════════════╝
-
-    @Test
-    @DisplayName("Warns on Base64 obfuscation")
-    void warnsOnBase64Obfuscation() {
-        assertDecision("safeguard-warn-base64.txt", "warn");
-    }
-
-    @Test
-    @DisplayName("Warns on roleplay evasion")
-    void warnsOnRoleplayEvasion() {
-        assertDecision("safeguard-warn-roleplay.txt", "warn");
-    }
-
-    @Test
-    @DisplayName("Warns on educational prefix evasion")
-    void warnsOnEducationalPrefixEvasion() {
-        assertDecision("safeguard-warn-evasion.txt", "warn");
-    }
-
-    @Test
-    @DisplayName("Warns on mixed obfuscation")
-    void warnsOnMixedObfuscation() {
-        assertDecision("safeguard-warn-mixed.txt", "warn");
-    }
-
-    // ╔══════════════════════════════════════════════════════════════════════════╗
-    // ║ Allow Decisions                                                         ║
-    // ╚══════════════════════════════════════════════════════════════════════════╝
-
-    @Test
-    @DisplayName("Allows insurance claim inquiry")
-    void allowsInsuranceClaimInquiry() {
-        assertDecision("safeguard-safeprompt.txt", "allow");
-    }
-
-    @Test
-    @DisplayName("Allows loan application")
-    void allowsLoanApplication() {
-        assertDecision("safeguard-allow-loan.txt", "allow");
-    }
-
-    @Test
-    @DisplayName("Allows product return request")
-    void allowsProductReturn() {
-        assertDecision("safeguard-allow-return.txt", "allow");
-    }
-
-    @Test
-    @DisplayName("Allows general knowledge question")
-    void allowsGeneralKnowledge() {
-        assertDecision("safeguard-allow-knowledge.txt", "allow");
-    }
-
-    // ── helper ──────────────────────────────────────────────────────────────
 
     private void assertDecision(String promptFile, String expectedDecision) {
         String prompt = loadPrompt(promptFile);
