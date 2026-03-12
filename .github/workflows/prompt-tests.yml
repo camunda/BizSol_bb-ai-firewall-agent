@@ -38,7 +38,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >
-          mvn verify -B -DskipUTs -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
+          mvn verify -B -Dsurefire.skip=true -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
 
       - name: Upload test reports
         if: always()
