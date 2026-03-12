@@ -18,7 +18,7 @@ jobs:
         camunda-version:
           - name: '8.8'
             docker-tag: '8.8-SNAPSHOT'
-          - name: '8.9-alpha'
+          - name: '8.9'
             docker-tag: '8.9-SNAPSHOT'
 
     name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }})
