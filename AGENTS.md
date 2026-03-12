@@ -36,6 +36,11 @@ Follow conventions in COMMIT-MESSAGE-GUIDELINE.md
 - Test resources location: `src/test/resources/`
 - Coverage thresholds enforced at build time via `mvn verify`
 
+## BPMN & DMN Validation
+
+- **BPMN files**: Every created or modified `.bpmn` file must be validated with [bpmnlint](https://github.com/bpmn-io/bpmnlint) before commit. Run `npx bpmnlint <file>.bpmn` and fix all reported errors and warnings.
+- **DMN files**: Every created or modified `.dmn` file must be validated with [dmnlint](https://github.com/bpmn-io/dmnlint) before commit. Run `npx dmnlint <file>.dmn` and fix all reported errors and warnings
+
 ## Code Quality & Standards
 
 - **Formatting**: Code must pass `mvn spotless:check` before commit
