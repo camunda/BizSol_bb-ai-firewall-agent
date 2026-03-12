@@ -1,16 +1,13 @@
 # AI Firewall Agent
 
 It takes a user prompt and safeguards against malicious intent.  
-A job worker transforms the Agent output to a proper JSON schema structure (see below).
+The process uses the Camunda AI Agent Connector to call the LLM and returns a structured JSON result via a FEEL expression — no external job worker required.
 
 ![AI Firewall Agent](camunda-artifacts/safeguard-agent.png)
 
 ## Prerequisites
 
-- **Java 25** (JDK)
-- **Maven 3.9+**
-- **Camunda 8.8+** - e.g. [c8run](https://docs.camunda.io/docs/self-managed/setup/deploy/local/c8run/) for local development, or a [SaaS](https://docs.camunda.io/docs/guides/create-cluster/) / Self-Managed cluster
-- **Docker & Docker Compose** (only if running via Docker)
+- **Camunda 8.8+** - e.g. [c8run](https://docs.camunda.io/docs/self-managed/setup/deploy/local/c8run/) for local development, or a [SaaS](https://docs.camunda.io/docs/guides/create-cluster/) / Self-Managed cluster´
 
 ## Mandatory inputs
 
@@ -29,16 +26,7 @@ A job worker transforms the Agent output to a proper JSON schema structure (see 
 
 ### Optional
 
-- Set the host port for the job worker via a variable in `.env`.  
-  Copy `.env.example` to `.env` and adjust:
-
-  ```bash
-  cp .env.example .env
-  ```
-
-  Default port: `9090`
-
-- If the targeted Camunda Version is >= `8.9`, the JSON converter worker can be substituted with the [`FEEL` expression `to json(value: Any)`](https://docs.camunda.io/docs/next/components/modeler/feel/builtin-functions/feel-built-in-functions-conversion/#to-jsonvalue)
+- Adjust guardrail parameters (see [Guardrails](#guardrails) below) directly in the BPMN or via process variables.
 
 ## Guardrails
 
@@ -97,43 +85,11 @@ The `/camunda-artifacts` directory contains:
 
 ### 1. Customize and Deploy the BPMN to Camunda
 
-Customize and Deploy **at minimum** `safeguard-agent.bpmn` from `/camunda-artifacts` to your Camunda 8.8+ cluster.
+Customize and deploy **at minimum** `safeguard-agent.bpmn` from `/camunda-artifacts` to your Camunda 8.8+ cluster.
 
-### 2. Connect the Job Worker to the Camunda cluster
+No external job worker is needed — the process uses only the built-in AI Agent Connector and FEEL expressions.
 
-The application in `/src/main/java/io/camunda/bizsol/bb/ai_firewall_agent/AIFirewallAgentApplication.java` needs to to connect to the Camunda cluster. By default (with no config), the underyling Camunda SDK connects to `localhost:26500` (gRPC) and `localhost:8080` (REST), which matches a local **c8run** setup.
-
-To point at a different cluster, set this environment variable before starting the application:
-
-```bash
-export CAMUNDA_CLIENT_REST_ADDRESS=http://localhost:8080
-```
-
-or modify `/src/main/resources/application.yaml` directly.
-
-For **Camunda SaaS**, follow the [Spring Zeebe client configuration docs](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/).
-
-### 3. Start the Job Worker application
-
-Choose one of:
-
-- **Maven** (directly):
-
-  ```bash
-  mvn spring-boot:run
-  ```
-
-  The application starts on port **9090** (configured in `src/main/resources/application.yaml`).
-
-- **Docker Compose**:
-
-  ```bash
-  docker-compose -f docker-compose.ai-firewall-agent.yaml up
-  ```
-
-  Exposes port **9090** on the host (override via `AI_FIREWALL_AGENT_PORT` in `.env`).
-
-### 4. Start a process instance
+### 2. Start a process instance
 
 Start a process instance of `safeguard-agent` (or the usage-example process) with:
 
@@ -144,6 +100,14 @@ Start a process instance of `safeguard-agent` (or the usage-example process) wit
 ```
 
 ## Running tests
+
+### Requirements
+
+- **Java 25** (JDK) — only for building and running tests locally
+- **Maven 3.9+** — only for building and running tests locally
+- **Docker** — required for running tests (Testcontainers)
+
+### Unit / CPT tests
 
 ```bash
 mvn test
@@ -156,88 +120,52 @@ The build enforces:
 - **60 %** BPMN path coverage (via `camunda-process-test`)
 - **80 %** line coverage (via JaCoCo)
 
-## (WIP) LLM Integration Tests (IT)
+### Prompt Tests
 
-⚠️ This is a work in progress and not finished yet - look, don't touch :)
+Tests that validate prompt classification with real LLM calls.
 
-End-to-end integration tests that validate prompt classification with real LLM calls.
+`SafeguardPromptClassificationIT` sends actual user prompts through the safeguard-agent BPMN process using GitHub Models (openai/gpt-4.1-mini) via the Camunda Process Test connectors runtime.
+Tests are auto-discovered from prompt files — grouped by expected decision (`block`, `warn`, `allow`).
 
-LLM integration tests (`*IT.java` files) send actual user prompts through the safeguard-agent BPMN process using GitHub Models (gpt-4o-mini) via the Camunda Process Test connectors runtime. These tests verify that the LLM correctly classifies prompts as `allow`, `warn`, or `block`.
+| Aspect | Detail |
+|--------|--------|
+| **Naming convention** | `*IT.java` suffix → Maven Failsafe plugin |
+| **Base class** | `LlmIntegrationTestBase` |
+| **LLM provider** | [GitHub Models](https://models.github.ai/inference) — `openai/gpt-4.1-mini` |
+| **Auth** | `GITHUB_TOKEN` env var (in CI: `permissions: models: read`) |
+| **Speed** | 10-30 s per prompt (real HTTP calls) |
 
-### Key Differences from Unit/CPT Tests
-
-- **Naming convention**: `*IT.java` suffix (e.g., `SafeguardPromptClassificationIT.java`)
-- **Test runner**: Maven Failsafe plugin (not Surefire)
-- **Base class**: `LlmIntegrationTestBase` (not `ProcessTestBase`)
-- **Execution**: Real HTTP calls to GitHub Models API (slow: 10-30s per test)
-- **Configuration**: Connectors runtime enabled (`camunda.process-test.connectors-enabled=true`)
-
-### LLM Provider
-
-Tests use **GitHub Models** (openai/gpt-4.1-mini) with authentication via `GITHUB_TOKEN`:
-
-- **Endpoint**: `https://models.github.ai/inference`
-- **Model**: `openai/gpt-4.1-mini`
-- **Authentication**: `GITHUB_TOKEN` environment variable — in CI, the workflow must declare `permissions: models: read` so the default token can access GitHub Models
-- **Local testing**: Set `GITHUB_TOKEN` env var to a PAT with `models:read` permission
-
-### Running Locally
+#### Running locally
 
 ```bash
-# Set your GitHub PAT (with models:read permission) and run
 export GITHUB_TOKEN=ghp_...
 mvn failsafe:integration-test -B
 ```
 
 If `GITHUB_TOKEN` is not set, tests are automatically skipped.
 
-### Running in CI
+#### Adding new test cases
 
-The GitHub Actions workflow grants `models: read` permission to the default `GITHUB_TOKEN`, which enables access to the GitHub Models inference API — no extra secrets required:
+Drop a text file into `src/test/resources/prompts/` following the naming convention:
 
-```yaml
-jobs:
-  test:
-    permissions:
-      contents: read
-      models: read
-    steps:
-      - name: Run LLM integration tests
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: mvn failsafe:integration-test failsafe:verify -B -q
+```shell
+safeguard-<category>-<name>.txt
 ```
 
-### Adding New Prompt Test Cases
+where `<category>` is one of `block`, `warn`, or `allow`.
 
-1. **Create a prompt file** in `src/test/resources/prompts/` following the naming convention:
-   - `safeguard-block-{shortname}.txt` for prompts that should be blocked
-   - `safeguard-warn-{shortname}.txt` for prompts that should trigger warnings
-   - `safeguard-allow-{shortname}.txt` for safe prompts
+Examples:
 
-2. **Add a test method** in `SafeguardPromptClassificationIT.java`:
-   ```java
-   @Test
-   @DisplayName("Test description")
-   void testMethodName() {
-       String prompt = loadPrompt("safeguard-{decision}-{shortname}.txt");
-       var processInstance = startSafeguardProcess(prompt);
-       
-       CamundaAssert.assertThat(processInstance)
-               .hasCompletedElements("Event_safeGuardResult")
-               .isCompleted();
-       
-       CamundaAssert.assertThat(processInstance)
-               .hasVariableSatisfies("safeGuardResult", Map.class,
-                       result -> Assertions.assertThat(result.get("decision"))
-                               .isEqualTo("allow|warn|block"));
-   }
-   ```
+- `safeguard-block-sqli.txt` — prompt that should be **blocked**
+- `safeguard-warn-suspicious.txt` — prompt that should trigger a **warning**
+- `safeguard-allow-greeting.txt` — safe prompt that should be **allowed**
 
-### minConfidence Setting
+No code changes required — the test factory discovers new files automatically.
 
-LLM integration tests set `minConfidence: 0.5` (lower than production default of 0.95) to avoid retry loops during testing. The LLM may return varying confidence levels (0.7-0.99), and a low threshold ensures the process doesn't retry, which would make tests slow and flaky. Assertions target the `decision` value, not confidence.
+#### minConfidence setting
 
-### Coverage
+LLM integration tests set `minConfidence: 0.5` (lower than production default of 0.95) to avoid retry loops during testing. Assertions target the `decision` value, not confidence.
+
+#### Coverage
 
 Integration test coverage is tracked separately in `jacoco-it.exec`, then merged with unit test coverage in `jacoco-merged.exec`. This is already configured in `pom.xml`.
