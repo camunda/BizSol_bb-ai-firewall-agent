@@ -40,6 +40,7 @@ jobs:
         run: >
           mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true
           -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
+          -Dcamunda.process-test.connectors-docker-image-version=${{ matrix.camunda-version.docker-tag }}
 
       - name: Upload test reports
         if: always()
