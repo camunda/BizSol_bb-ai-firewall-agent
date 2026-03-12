@@ -1,4 +1,4 @@
-name: LLM Integration Tests
+name: Prompt Tests
 
 on:
   pull_request:
@@ -21,7 +21,7 @@ jobs:
           - name: '8.9-alpha'
             docker-tag: '8.9-SNAPSHOT'
 
-    name: LLM tests (Camunda ${{ matrix.camunda-version.name }})
+    name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }})
 
     steps:
       - name: Checkout code
@@ -34,17 +34,16 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run LLM integration tests (Camunda ${{ matrix.camunda-version.name }})
+      - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >
-          mvn failsafe:integration-test failsafe:verify -B -q
-          -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
+          mvn verify -B -DskipUTs -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
 
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: llm-test-reports-${{ matrix.camunda-version.name }}
+          name: prompt-test-reports-${{ matrix.camunda-version.name }}
           path: target/failsafe-reports/
           retention-days: 7
