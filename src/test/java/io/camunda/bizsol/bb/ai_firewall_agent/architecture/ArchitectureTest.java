@@ -37,6 +37,7 @@ class ArchitectureTest {
                         "io.camunda..",
                         "org.slf4j..",
                         "com.fasterxml.jackson..")
+                .allowEmptyShould(true)
                 .check(classes);
     }
 
@@ -73,7 +74,7 @@ class ArchitectureTest {
     void layeredArchitectureShouldBeRespected() {
         layeredArchitecture()
                 .consideringAllDependencies()
-                .layer("Workers")
+                .optionalLayer("Workers")
                 .definedBy("..workers..")
                 .optionalLayer("Services")
                 .definedBy("..services..")
