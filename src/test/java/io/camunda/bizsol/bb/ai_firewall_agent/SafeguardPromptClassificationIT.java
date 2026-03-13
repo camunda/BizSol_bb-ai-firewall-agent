@@ -50,11 +50,11 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
     private static final Pattern PROMPT_FILE_PATTERN =
             Pattern.compile("safeguard-(block|warn|allow)-(.+)\\.txt");
 
-    /** Number of tests to run before pausing. */
-    private static final int BATCH_SIZE = 4;
-
-    /** Seconds to wait between batches to let the API rate-limit window reset. */
-    private static final int BATCH_COOLDOWN_SECONDS = 65;
+    // /** Number of tests to run before pausing. */
+    // private static final int BATCH_SIZE = 4;
+    //
+    // /** Seconds to wait between batches to let the API rate-limit window reset. */
+    // private static final int BATCH_COOLDOWN_SECONDS = 65;
 
     @TestFactory
     List<DynamicTest> safeguardClassification() {
