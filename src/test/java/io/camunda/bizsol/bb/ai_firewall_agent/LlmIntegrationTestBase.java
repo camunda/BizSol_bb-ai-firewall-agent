@@ -241,7 +241,9 @@ abstract class LlmIntegrationTestBase {
             }
 
             // 3. Fallback: brief pause to avoid rapid-fire requests
-            LOG.info("⏳ No rate-limit headers found — applying fallback pause of {}s", MIN_PAUSE_SECONDS);
+            LOG.info(
+                    "⏳ No rate-limit headers found — applying fallback pause of {}s",
+                    MIN_PAUSE_SECONDS);
             TimeUnit.SECONDS.sleep(MIN_PAUSE_SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
