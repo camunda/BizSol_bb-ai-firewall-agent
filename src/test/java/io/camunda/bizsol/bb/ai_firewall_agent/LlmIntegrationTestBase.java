@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,7 +89,7 @@ abstract class LlmIntegrationTestBase {
         Assumptions.assumeTrue(
                 token != null && !token.isBlank(),
                 "Skipping LLM integration tests: GITHUB_TOKEN is not set");
-        CamundaAssert.setAssertionTimeout(Duration.ofMinutes(3));
+        CamundaAssert.setAssertionTimeout(Duration.ofSeconds(90));
     }
 
     /**
@@ -111,8 +112,8 @@ abstract class LlmIntegrationTestBase {
                                 "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
                                 "<zeebe:input source=\"openai/gpt-4.1-mini\""
                                         + " target=\"provider.openaiCompatible.model.model\" />"),
-                        Replace.replace("retries=\"3\"", "retries=\"1\""),
-                        Replace.replace("PT10M", "PT90S"));
+                        Replace.replace("retries=\"3\"", "retries=\"0\""),
+                        Replace.replace("PT10M", "PT60S"));
 
         // --- dump the resulting BPMN for debugging (skip in CI) ---
         if (System.getenv("CI") == null) {
@@ -160,6 +161,12 @@ abstract class LlmIntegrationTestBase {
      * @return the process instance event
      */
     protected ProcessInstanceEvent startSafeguardProcess(String userPrompt) {
+        // Pace LLM calls to avoid GitHub Models API rate-limiting (burst limit).
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         return camundaClient
                 .newCreateInstanceCommand()
                 .bpmnProcessId(PROCESS_ID)

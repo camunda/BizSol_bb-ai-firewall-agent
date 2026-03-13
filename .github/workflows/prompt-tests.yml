@@ -14,6 +14,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         camunda-version:
           - name: '8.8'
