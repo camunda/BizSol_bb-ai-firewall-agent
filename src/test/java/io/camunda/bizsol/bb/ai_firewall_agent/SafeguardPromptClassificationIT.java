@@ -31,10 +31,9 @@ import org.slf4j.LoggerFactory;
  *
  * <h3>Rate limiting</h3>
  *
- * GitHub Models enforces a burst rate limit. To stay within budget, tests are executed in batches
- * of {@link #BATCH_SIZE} with a {@link #BATCH_COOLDOWN_SECONDS}-second cooldown between batches.
- * The {@code @TestFactory} produces a flat list of {@link DynamicTest}s where cooldown sleeps are
- * injected as explicit test entries between batches.
+ * GitHub Models enforces burst rate limits. After each test, the runner probes the API endpoint and
+ * inspects {@code retry-after}, {@code x-ratelimit-remaining}, and {@code x-ratelimit-reset}
+ * response headers to dynamically determine how long to pause before the next test.
  *
  * @see LlmIntegrationTestBase
  */
@@ -156,6 +155,8 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
         } catch (AssertionError e) {
             LOG.error("✗ [{}] {} — FAILED: {}", tc.category, promptFile, e.getMessage());
             throw e;
+        } finally {
+            waitForRateLimit();
         }
     }
 }

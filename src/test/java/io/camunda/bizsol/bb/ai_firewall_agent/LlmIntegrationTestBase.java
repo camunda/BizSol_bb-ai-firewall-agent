@@ -8,11 +8,17 @@ import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +50,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 abstract class LlmIntegrationTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(LlmIntegrationTestBase.class);
+
+    /** Minimum seconds to pause between tests even when no rate-limit headers are present. */
+    private static final long MIN_PAUSE_SECONDS = 2;
+
+    /** URL used for probing current rate-limit status after each LLM call. */
+    private static final String RATE_LIMIT_PROBE_URL = "https://models.github.ai/inference";
 
     // -- BPMN element IDs -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
@@ -148,9 +160,6 @@ abstract class LlmIntegrationTestBase {
      * and sets {@code minConfidence} to 0.5 to avoid retry loops during testing (the LLM may return
      * varying confidence levels).
      *
-     * <p>Callers must invoke {@link #acquireRateSlot()} before calling this method to respect
-     * GitHub Models API rate limits.
-     *
      * @param userPrompt the user prompt to safeguard
      * @return the process instance event
      */
@@ -171,5 +180,81 @@ abstract class LlmIntegrationTestBase {
                                 1))
                 .send()
                 .join();
+    }
+
+    /**
+     * Probe the GitHub Models API to determine the current rate-limit status and sleep until the
+     * next request is allowed.
+     *
+     * <p>Checks response headers in order of priority:
+     *
+     * <ol>
+     *   <li>{@code retry-after} — seconds to wait before retrying
+     *   <li>{@code x-ratelimit-remaining} / {@code x-ratelimit-reset} — remaining quota and UTC
+     *       epoch of next reset
+     * </ol>
+     *
+     * <p>Falls back to a {@link #MIN_PAUSE_SECONDS}-second pause when no headers are present.
+     *
+     * @see <a
+     *     href="https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api">
+     *     GitHub REST API best practices</a>
+     */
+    protected void waitForRateLimit() {
+        try {
+            HttpResponse<Void> response =
+                    HttpClient.newHttpClient()
+                            .send(
+                                    HttpRequest.newBuilder()
+                                            .uri(URI.create(RATE_LIMIT_PROBE_URL))
+                                            .header(
+                                                    "Authorization",
+                                                    "Bearer " + System.getenv("GITHUB_TOKEN"))
+                                            .GET()
+                                            .build(),
+                                    HttpResponse.BodyHandlers.discarding());
+
+            var headers = response.headers();
+
+            // 1. retry-after takes precedence
+            var retryAfter = headers.firstValue("retry-after");
+            if (retryAfter.isPresent()) {
+                long wait = Long.parseLong(retryAfter.get()) + 1;
+                LOG.info("⏳ retry-after={}s — pausing {}s", retryAfter.get(), wait);
+                TimeUnit.SECONDS.sleep(wait);
+                return;
+            }
+
+            // 2. x-ratelimit-remaining / x-ratelimit-reset
+            var remaining = headers.firstValue("x-ratelimit-remaining");
+            var reset = headers.firstValue("x-ratelimit-reset");
+            if (remaining.isPresent()) {
+                int left = Integer.parseInt(remaining.get());
+                LOG.info("Rate-limit remaining: {}", left);
+                if (left == 0 && reset.isPresent()) {
+                    long resetEpoch = Long.parseLong(reset.get());
+                    long wait = Math.max(resetEpoch - Instant.now().getEpochSecond() + 1, 1);
+                    LOG.info("⏳ Rate limit exhausted — waiting {}s until reset", wait);
+                    TimeUnit.SECONDS.sleep(wait);
+                    return;
+                }
+            }
+
+            // 3. Fallback: brief pause to avoid rapid-fire requests
+            TimeUnit.SECONDS.sleep(MIN_PAUSE_SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.warn("Rate-limit wait interrupted");
+        } catch (Exception e) {
+            LOG.warn(
+                    "Rate-limit probe failed ({}), applying {}s fallback pause",
+                    e.getMessage(),
+                    MIN_PAUSE_SECONDS);
+            try {
+                TimeUnit.SECONDS.sleep(MIN_PAUSE_SECONDS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 }
