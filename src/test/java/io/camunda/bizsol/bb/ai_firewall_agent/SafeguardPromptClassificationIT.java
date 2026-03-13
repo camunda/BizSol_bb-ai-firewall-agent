@@ -139,6 +139,8 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
         String promptFile = tc.file.getFileName().toString();
         LOG.info("▶ [{}] {}", tc.category, promptFile);
 
+        waitForRateLimit();
+
         String prompt = loadPrompt(promptFile);
         var processInstance = startSafeguardProcess(prompt);
 
@@ -159,8 +161,6 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
             LOG.error("✗ [{}] {} — FAILED: {}", tc.category, promptFile, e.getMessage());
             logProcessVariables(processInstance);
             throw e;
-        } finally {
-            waitForRateLimit();
         }
     }
 
