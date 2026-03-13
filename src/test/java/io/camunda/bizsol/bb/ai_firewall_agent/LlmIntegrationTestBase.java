@@ -54,8 +54,12 @@ abstract class LlmIntegrationTestBase {
     /** Minimum seconds to pause between tests even when no rate-limit headers are present. */
     private static final long MIN_PAUSE_SECONDS = 2;
 
-    /** URL used for probing current rate-limit status after each LLM call. */
-    private static final String RATE_LIMIT_PROBE_URL = "https://models.github.ai/inference";
+    /** GitHub Models inference endpoint. */
+    private static final String INFERENCE_URL =
+            "https://models.github.ai/inference/chat/completions";
+
+    /** Model identifier used for both the BPMN connector and rate-limit probes. */
+    static final String MODEL = "openai/gpt-5-nano";
 
     // -- BPMN element IDs -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
@@ -113,7 +117,9 @@ abstract class LlmIntegrationTestBase {
                                         + " />"),
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\"openai/gpt-5-mini\""
+                                "<zeebe:input source=\""
+                                        + MODEL
+                                        + "\""
                                         + " target=\"provider.openaiCompatible.model.model\" />"),
                         Replace.replace("retries=\"3\"", "retries=\"0\""),
                         Replace.replace("PT10M", "PT30S"));
@@ -183,8 +189,8 @@ abstract class LlmIntegrationTestBase {
     }
 
     /**
-     * Probe the GitHub Models API to determine the current rate-limit status and sleep until the
-     * next request is allowed.
+     * Send a lightweight inference request to the GitHub Models API and inspect the response
+     * headers to determine how long to wait before the next test.
      *
      * <p>Checks response headers in order of priority:
      *
@@ -202,15 +208,23 @@ abstract class LlmIntegrationTestBase {
      */
     protected void waitForRateLimit() {
         try {
+            String body =
+                    "{\"model\":\""
+                            + MODEL
+                            + "\","
+                            + "\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],"
+                            + "\"max_tokens\":1}";
+
             HttpResponse<Void> response =
                     HttpClient.newHttpClient()
                             .send(
                                     HttpRequest.newBuilder()
-                                            .uri(URI.create(RATE_LIMIT_PROBE_URL))
+                                            .uri(URI.create(INFERENCE_URL))
                                             .header(
                                                     "Authorization",
                                                     "Bearer " + System.getenv("GITHUB_TOKEN"))
-                                            .GET()
+                                            .header("Content-Type", "application/json")
+                                            .POST(HttpRequest.BodyPublishers.ofString(body))
                                             .build(),
                                     HttpResponse.BodyHandlers.discarding());
 
