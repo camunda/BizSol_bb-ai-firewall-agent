@@ -18,6 +18,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * LLM integration tests for safeguard prompt classification.
@@ -29,18 +31,20 @@ import org.junit.jupiter.api.TestFactory;
  * <p>Supported categories: {@code block}, {@code warn}, {@code allow}. The category extracted from
  * the filename is used as the expected decision.
  *
- * <h3>Test execution</h3>
+ * <h3>Rate limiting</h3>
  *
- * <ul>
- *   <li>Maven: {@code mvn failsafe:integration-test} (requires {@code GITHUB_TOKEN})
- *   <li>CI: Runs automatically with {@code GITHUB_TOKEN} from GitHub Actions
- *   <li>Naming: {@code *IT.java} suffix triggers Maven Failsafe plugin
- * </ul>
+ * All tests are discovered upfront and grouped by category, but each test acquires a rate-limit
+ * slot via {@link LlmIntegrationTestBase#acquireRateSlot()} before starting a process instance.
+ * This ensures we never exceed the GitHub Models API burst limit (~4 requests/minute) regardless of
+ * how many prompt files exist.
  *
  * @see LlmIntegrationTestBase
  */
 @CamundaSpringProcessTest
 class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
+
+    private static final Logger LOG =
+            LoggerFactory.getLogger(SafeguardPromptClassificationIT.class);
 
     private static final Path PROMPTS_DIR = Path.of("src/test/resources/prompts");
     private static final Pattern PROMPT_FILE_PATTERN =
@@ -53,6 +57,14 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
         Assertions.assertThat(byCategory)
                 .as("Expected prompt files for at least one category in %s", PROMPTS_DIR)
                 .isNotEmpty();
+
+        int totalTests = byCategory.values().stream().mapToInt(List::size).sum();
+        LOG.info(
+                "Discovered {} prompt test(s) across {} categor{}: {}",
+                totalTests,
+                byCategory.size(),
+                byCategory.size() == 1 ? "y" : "ies",
+                byCategory.keySet());
 
         List<DynamicContainer> containers = new ArrayList<>();
         for (var entry : byCategory.entrySet()) {
@@ -102,6 +114,10 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
     }
 
     private void assertDecision(String promptFile, String expectedDecision) {
+        LOG.info("▶ [{}] {}", expectedDecision, promptFile);
+
+        acquireRateSlot();
+
         String prompt = loadPrompt(promptFile);
         var processInstance = startSafeguardProcess(prompt);
 
@@ -116,5 +132,7 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
                         result ->
                                 Assertions.assertThat(result.get("decision"))
                                         .isEqualTo(expectedDecision));
+
+        LOG.info("✓ [{}] {} — passed", expectedDecision, promptFile);
     }
 }

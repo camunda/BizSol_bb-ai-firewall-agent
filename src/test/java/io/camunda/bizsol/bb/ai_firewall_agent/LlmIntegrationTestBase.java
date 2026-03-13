@@ -12,8 +12,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,15 +34,12 @@ import org.springframework.boot.test.context.SpringBootTest;
  * <p>Tests are conditionally enabled when {@code GITHUB_TOKEN} is set. This allows graceful
  * skipping in local environments without credentials.
  *
- * <h3>Configuration</h3>
+ * <h3>Rate limiting</h3>
  *
- * <ul>
- *   <li>Connectors runtime enabled: {@code camunda.process-test.connectors-enabled=true}
- *   <li>LLM endpoint: {@code https://models.inference.ai.github.com/v1}
- *   <li>LLM model: {@code gpt-4o-mini}
- *   <li>Env var: {@code GITHUB_TOKEN} (with {@code models: read} permission in CI)
- *   <li>Assertion timeout: 3 minutes (real LLM calls can take 10-30s)
- * </ul>
+ * GitHub Models enforces a burst rate limit (~5 requests per minute). The {@link
+ * #acquireRateSlot()} method implements a sliding-window rate limiter shared across all tests in a
+ * JVM. Tests call it before starting a process instance; it blocks until a slot is available in the
+ * current window.
  *
  * @see <a href="https://docs.camunda.io/docs/apis-tools/testing/utilities/">Camunda Process
  *     Test</a>
@@ -53,6 +52,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 abstract class LlmIntegrationTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(LlmIntegrationTestBase.class);
+
+    // -- Rate limiter -----------------------------------------------------------
+    /** Maximum requests allowed within the sliding window. */
+    private static final int RATE_LIMIT_MAX_REQUESTS = 4;
+
+    /** Sliding window duration. */
+    private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(1);
+
+    /** Timestamps of recent requests (sliding window). Guarded by {@code RATE_LOCK}. */
+    private static final Deque<Instant> REQUEST_TIMESTAMPS = new ArrayDeque<>();
+
+    private static final Object RATE_LOCK = new Object();
 
     // -- BPMN element IDs -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
@@ -89,7 +100,7 @@ abstract class LlmIntegrationTestBase {
         Assumptions.assumeTrue(
                 token != null && !token.isBlank(),
                 "Skipping LLM integration tests: GITHUB_TOKEN is not set");
-        CamundaAssert.setAssertionTimeout(Duration.ofSeconds(90));
+        CamundaAssert.setAssertionTimeout(Duration.ofSeconds(45));
     }
 
     /**
@@ -113,7 +124,7 @@ abstract class LlmIntegrationTestBase {
                                 "<zeebe:input source=\"openai/gpt-4.1-mini\""
                                         + " target=\"provider.openaiCompatible.model.model\" />"),
                         Replace.replace("retries=\"3\"", "retries=\"0\""),
-                        Replace.replace("PT10M", "PT60S"));
+                        Replace.replace("PT10M", "PT30S"));
 
         // --- dump the resulting BPMN for debugging (skip in CI) ---
         if (System.getenv("CI") == null) {
@@ -157,16 +168,13 @@ abstract class LlmIntegrationTestBase {
      * and sets {@code minConfidence} to 0.5 to avoid retry loops during testing (the LLM may return
      * varying confidence levels).
      *
+     * <p>Callers must invoke {@link #acquireRateSlot()} before calling this method to respect
+     * GitHub Models API rate limits.
+     *
      * @param userPrompt the user prompt to safeguard
      * @return the process instance event
      */
     protected ProcessInstanceEvent startSafeguardProcess(String userPrompt) {
-        // Pace LLM calls to avoid GitHub Models API rate-limiting (burst limit).
-        try {
-            TimeUnit.SECONDS.sleep(5);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
         return camundaClient
                 .newCreateInstanceCommand()
                 .bpmnProcessId(PROCESS_ID)
@@ -183,5 +191,47 @@ abstract class LlmIntegrationTestBase {
                                 1))
                 .send()
                 .join();
+    }
+
+    /**
+     * Blocks until a rate-limit slot is available within the sliding window. Ensures at most {@link
+     * #RATE_LIMIT_MAX_REQUESTS} are sent per {@link #RATE_LIMIT_WINDOW}.
+     */
+    protected static void acquireRateSlot() {
+        synchronized (RATE_LOCK) {
+            while (true) {
+                Instant now = Instant.now();
+                Instant windowStart = now.minus(RATE_LIMIT_WINDOW);
+
+                // Evict timestamps outside the window
+                while (!REQUEST_TIMESTAMPS.isEmpty()
+                        && REQUEST_TIMESTAMPS.peekFirst().isBefore(windowStart)) {
+                    REQUEST_TIMESTAMPS.pollFirst();
+                }
+
+                if (REQUEST_TIMESTAMPS.size() < RATE_LIMIT_MAX_REQUESTS) {
+                    REQUEST_TIMESTAMPS.addLast(now);
+                    LOG.info(
+                            "Rate slot acquired ({}/{} in current window)",
+                            REQUEST_TIMESTAMPS.size(),
+                            RATE_LIMIT_MAX_REQUESTS);
+                    return;
+                }
+
+                // Wait until the oldest timestamp leaves the window
+                Instant oldest = REQUEST_TIMESTAMPS.peekFirst();
+                long waitMs =
+                        Duration.between(now, oldest.plus(RATE_LIMIT_WINDOW)).toMillis() + 500;
+                if (waitMs > 0) {
+                    LOG.info("Rate limit reached, waiting {}s for next slot", waitMs / 1000);
+                    try {
+                        RATE_LOCK.wait(waitMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+            }
+        }
     }
 }
