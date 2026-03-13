@@ -59,7 +59,7 @@ abstract class LlmIntegrationTestBase {
             "https://models.github.ai/inference/chat/completions";
 
     /** Model identifier used for both the BPMN connector and rate-limit probes. */
-    static final String MODEL = "openai/gpt-5-nano";
+    static final String MODEL = "openai/gpt-5-mini";
 
     // -- BPMN element IDs -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
@@ -215,7 +215,7 @@ abstract class LlmIntegrationTestBase {
                             + "\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],"
                             + "\"max_tokens\":1}";
 
-            HttpResponse<Void> response =
+            HttpResponse<String> response =
                     HttpClient.newHttpClient()
                             .send(
                                     HttpRequest.newBuilder()
@@ -226,7 +226,10 @@ abstract class LlmIntegrationTestBase {
                                             .header("Content-Type", "application/json")
                                             .POST(HttpRequest.BodyPublishers.ofString(body))
                                             .build(),
-                                    HttpResponse.BodyHandlers.discarding());
+                                    HttpResponse.BodyHandlers.ofString());
+
+            LOG.info(
+                    "Rate-limit probe: status={}, body={}", response.statusCode(), response.body());
 
             var headers = response.headers();
 

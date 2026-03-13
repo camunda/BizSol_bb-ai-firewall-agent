@@ -1,5 +1,8 @@
 package io.camunda.bizsol.bb.ai_firewall_agent;
 
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.io.IOException;
@@ -154,9 +157,30 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
             LOG.info("✓ [{}] {} — passed", tc.category, promptFile);
         } catch (AssertionError e) {
             LOG.error("✗ [{}] {} — FAILED: {}", tc.category, promptFile, e.getMessage());
+            logProcessVariables(processInstance);
             throw e;
         } finally {
             waitForRateLimit();
+        }
+    }
+
+    private void logProcessVariables(ProcessInstanceEvent processInstance) {
+        try {
+            SearchResponse<Variable> result =
+                    camundaClient
+                            .newVariableSearchRequest()
+                            .filter(
+                                    f ->
+                                            f.processInstanceKey(
+                                                    processInstance.getProcessInstanceKey()))
+                            .send()
+                            .join();
+            LOG.error("Process instance {} variables:", processInstance.getProcessInstanceKey());
+            for (Variable v : result.items()) {
+                LOG.error("  {} = {}", v.getName(), v.getValue());
+            }
+        } catch (Exception ex) {
+            LOG.warn("Could not fetch process variables for debugging: {}", ex.getMessage());
         }
     }
 }
