@@ -1,41 +1,81 @@
 # AI Firewall Agent
 
-It takes a user prompt and safeguards against malicious intent.  
-The process uses the Camunda AI Agent Connector to call the LLM and returns a structured JSON result via a FEEL expression — no external job worker required.
+This repository contains a Camunda building block that evaluates an incoming user prompt before it reaches an AI-powered task. It helps you detect unsafe prompts and return a structured decision your process can act on.
 
 ![AI Firewall Agent](camunda-artifacts/safeguard-agent.png)
 
+## What problem this building block solves
+User prompts can contain malicious or unsafe instructions. In an AI-powered workflow, that can lead to prompt injection, manipulated agent behavior, or unsafe downstream actions.
+
+## Where to use this building block
+Use the AI Firewall Agent when:
+- User input is passed to an AI task
+- External users interact with an AI-powered workflow
+- AI-generated decisions trigger automated actions
+- Sensitive systems are connected downstream
+
+A common pattern is to place this building block directly before the AI task or call activity that uses the prompt.
+
+## How it works
+- Your process passes a user prompt into the safeguard-agent process.
+- The firewall evaluates the prompt with your configured AI provider and model.
+- If the result is valid but confidence is below `minConfidence`, the process stores the previous result, refines the system prompt, and retries until `maxTries` is reached.
+- The process returns `safeGuardResult`, which your workflow can use to continue, warn, block, escalate, or sanitize the prompt before reuse.
+
+## Repository contents
+The `camunda-artifacts` directory contains the main BPMN and reference files for the building block:
+
+| File | Purpose |
+|------|---------|
+| `safeguard-agent.bpmn` | **Required.** Main firewall process to deploy to your Camunda cluster. |
+| `safeguard-agent-usage-example.bpmn` | Example BPMN that calls the safeguard agent via a Call Activity. See [example](camunda-artifacts/README-usage-example.md) (Optional)  |
+| `safeguard-systemprompt.txt` | Reference system prompt used by the firewall. |
+| `safeguard-systemprompt-feel.txt` | FEEL-escaped version of the system prompt for BPMN expressions. |
+| `safeguard-confidence-refinement.txt` | Directive appended when confidence is too low and the process retries. |
+
 ## Prerequisites
 
-- **Camunda 8.8+** - e.g. [c8run](https://docs.camunda.io/docs/self-managed/setup/deploy/local/c8run/) for local development, or a [SaaS](https://docs.camunda.io/docs/guides/create-cluster/) / Self-Managed cluster´
+- **Camunda 8.8+** - e.g. [c8run](https://docs.camunda.io/docs/self-managed/setup/deploy/local/c8run/) for local development, or a [SaaS](https://docs.camunda.io/docs/guides/create-cluster/) / Self-Managed cluster
 
-## Mandatory inputs
+## Quick Start
 
-- `userPromptToSafeguard` (string) for user prompt; **default**: null
-- `systemPrompt` (string) for system prompt; **default**: (see file `safeguard-systemprompt.txt`)
+Deploy and configure the building block
 
-## Customizations
-
-### Mandatory
-
-- Open `safeguard-agent.bpmn` in [Camunda Modeler](https://modeler.cloud.camunda.io/) (Web or Desktop)
+- Customize `safeguard-agent.bpmn` and deploy to your Camunda 8.8+ cluster.
 - Select the `Safeguard Prompt` task and configure:
   - **Model provider** — the AI provider to use (e.g. OpenAI, Azure OpenAI, Ollama, etc.)
   - **Model** — the specific model name (e.g. `gpt-4o`, `llama3`, etc.)
-  - **API key / credentials** — as required by the chosen provider (typically via Connector secrets)
+  - **API key / Credentials** — as required by the chosen provider (typically via Connector secrets)
 
-### Optional
+Start a process instance
+For the minimal happy path, start the process with a prompt like this:
 
-- Adjust guardrail parameters (see [Guardrails](#guardrails) below) directly in the BPMN or via process variables.
+```json
+{
+  "userPromptToSafeguard": "What is the status of my insurance claim number IC-2024-001?"
+}
+```
 
-## Guardrails
+## Inputs and configuration
 
-The Guardrails for the AI Firewall Agent are set via these Process Variables.  
+### Required
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `userPromptToSafeguard`| (string) the user prompt to evaluate | null |
+| `systemPrompt`| (string) for system prompt | (see file `safeguard-systemprompt.txt`) |
+
+### Optional Guardrails
+
+The guardrails for the AI Firewall Agent are set via these process variables.  
 You can supply them to the Process Instance or set them directly in `safeguard-agent.bpmn`:
 
-- `maxTries` (int) for max allowed iterations over safeguard attempts; **default**: 3
-- `minConfidence` (float, 0.00 .. 1.00): for minimal confidence to be a trusted decision; **default**: 0.95
-- `maxUserPromptSize` (int): maximum character size for user prompt (== input); **default**: 2000000 (2 million)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `systemPrompt` | Embedded pre-configured prompt | Override the firewall instructions used for analysis |
+| `maxTries`| `3` | Maximum safeguard attempts before escalation |
+| `minConfidence` | `0.95` | Minimum confidence required to trust the decision |
+| `maxUserPromptSize` | `2000000` | Maximum allowed prompt size in characters |
 
 ### Confidence refinement loop
 
@@ -45,9 +85,9 @@ When the LLM returns a valid safeguard result but the confidence score falls bel
 2. **Refines the system prompt** – a `CONFIDENCE REFINEMENT DIRECTIVE` is appended to the system prompt, instructing the LLM to re-examine its assessment with deeper analysis and the previous result as context (see `safeguard-confidence-refinement.txt` for the template).
 3. **Loops back** to the iteration check – if `_current_try` ≤ `_maxTries`, the refined prompt is sent again; otherwise the `safeguard_max-iterations-reached` escalation fires.
 
-## JSON schema output
+## Output
 
-Process has the result variable `safeGuardResult` adhere to this schema:
+The process writes its result to the `safeGuardResult` variable using this schema:
 
 ```json
 {
@@ -69,35 +109,26 @@ Process has the result variable `safeGuardResult` adhere to this schema:
 }
 ```
 
-## Camunda artifacts
+### What the decision means
 
-The `/camunda-artifacts` directory contains:
+`allow` — The prompt is safe to continue as-is.
+`warn` — The prompt has issues, but you may continue with additional review or a sanitized version.
+`block` — The prompt should not continue downstream.
 
-| File | Purpose |
-|------|---------|
-| `safeguard-agent.bpmn` | **Required.** The main safeguard agent process. Deploy this to your cluster. |
-| `safeguard-agent-usage-example.bpmn` | Optional. Example BPMN that calls the safeguard agent via a Call Activity. See [README-usage-example.md](camunda-artifacts/README-usage-example.md). |
-| `safeguard-systemprompt.txt` | The system prompt used by the safeguard agent (plain text, for reference). |
-| `safeguard-systemprompt-feel.txt` | The same system prompt as a FEEL-escaped string, ready to paste into a BPMN expression. |
-| `safeguard-confidence-refinement.txt` | Template for the confidence refinement directive appended to the system prompt when confidence is below threshold. |
 
-## Running
+### Error handling and escalations
 
-### 1. Customize and Deploy the BPMN to Camunda
+The building block can escalate when the prompt is too large, the model output is invalid, retries are exhausted, or the AI task fails.
 
-Customize and deploy **at minimum** `safeguard-agent.bpmn` from `/camunda-artifacts` to your Camunda 8.8+ cluster.
+Common escalation paths include:
 
-No external job worker is needed — the process uses only the built-in AI Agent Connector and FEEL expressions.
+`safeguard_max-user-input-exceeded`
+`safeguard_max-iterations-reached`
+`safeguard_task-agent-failed`
+`safeguard_json-worker-error`
+`safeguard_bad-agent-output`
 
-### 2. Start a process instance
-
-Start a process instance of `safeguard-agent` (or the usage-example process) with:
-
-```json
-{
-  "userPromptToSafeguard": "What is the status of my insurance claim number IC-2024-001?"
-}
-```
+The usage example catches these escalations and converts them into BPMN errors so operators can review failures
 
 ## Running tests
 
@@ -113,10 +144,9 @@ Start a process instance of `safeguard-agent` (or the usage-example process) wit
 mvn test
 ```
 
-Tests use [Camunda Process Test](https://docs.camunda.io/docs/apis-tools/testing/getting-started/) with Testcontainers and WireMock. A Docker runtime is required.
+Tests use [Camunda Process Test](https://docs.camunda.io/docs/apis-tools/testing/getting-started/) with Testcontainers and WireMock and require Docker
 
 The build enforces:
-
 - **60 %** BPMN path coverage (via `camunda-process-test`)
 - **80 %** line coverage (via JaCoCo)
 
