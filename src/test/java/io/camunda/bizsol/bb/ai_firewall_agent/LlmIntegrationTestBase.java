@@ -113,7 +113,7 @@ abstract class LlmIntegrationTestBase {
                                         + " />"),
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\"openai/gpt-4.1-mini\""
+                                "<zeebe:input source=\"openai/gpt-5-mini\""
                                         + " target=\"provider.openaiCompatible.model.model\" />"),
                         Replace.replace("retries=\"3\"", "retries=\"0\""),
                         Replace.replace("PT10M", "PT30S"));
@@ -241,6 +241,7 @@ abstract class LlmIntegrationTestBase {
             }
 
             // 3. Fallback: brief pause to avoid rapid-fire requests
+            LOG.info("⏳ No rate-limit headers found — applying fallback pause of {}s", MIN_PAUSE_SECONDS);
             TimeUnit.SECONDS.sleep(MIN_PAUSE_SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
