@@ -84,19 +84,19 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
         List<DynamicTest> tests = new ArrayList<>();
         for (int i = 0; i < allTests.size(); i++) {
             // Insert cooldown before every batch (except the first)
-            if (i > 0 && i % BATCH_SIZE == 0) {
-                int batchNum = i / BATCH_SIZE;
-                tests.add(
-                        DynamicTest.dynamicTest(
-                                "⏳ cooldown before batch " + (batchNum + 1),
-                                () -> {
-                                    LOG.info(
-                                            "Waiting {}s for API rate-limit window to reset...",
-                                            BATCH_COOLDOWN_SECONDS);
-                                    TimeUnit.SECONDS.sleep(BATCH_COOLDOWN_SECONDS);
-                                    LOG.info("Cooldown complete, resuming tests");
-                                }));
-            }
+            // if (i > 0 && i % BATCH_SIZE == 0) {
+            //     int batchNum = i / BATCH_SIZE;
+            //     tests.add(
+            //             DynamicTest.dynamicTest(
+            //                     "⏳ cooldown before batch " + (batchNum + 1),
+            //                     () -> {
+            //                         LOG.info(
+            //                                 "Waiting {}s for API rate-limit window to reset...",
+            //                                 BATCH_COOLDOWN_SECONDS);
+            //                         TimeUnit.SECONDS.sleep(BATCH_COOLDOWN_SECONDS);
+            //                         LOG.info("Cooldown complete, resuming tests");
+            //                     }));
+            // }
 
             PromptTestCase tc = allTests.get(i);
             String displayName = "[" + tc.category + "] " + testDisplayName(tc.file);
