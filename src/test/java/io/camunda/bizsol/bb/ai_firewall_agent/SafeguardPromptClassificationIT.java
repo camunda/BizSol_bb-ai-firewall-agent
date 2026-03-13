@@ -8,14 +8,13 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.slf4j.Logger;
@@ -33,10 +32,10 @@ import org.slf4j.LoggerFactory;
  *
  * <h3>Rate limiting</h3>
  *
- * All tests are discovered upfront and grouped by category, but each test acquires a rate-limit
- * slot via {@link LlmIntegrationTestBase#acquireRateSlot()} before starting a process instance.
- * This ensures we never exceed the GitHub Models API burst limit (~4 requests/minute) regardless of
- * how many prompt files exist.
+ * GitHub Models enforces a burst rate limit. To stay within budget, tests are executed in batches
+ * of {@link #BATCH_SIZE} with a {@link #BATCH_COOLDOWN_SECONDS}-second cooldown between batches.
+ * The {@code @TestFactory} produces a flat list of {@link DynamicTest}s where cooldown sleeps are
+ * injected as explicit test entries between batches.
  *
  * @see LlmIntegrationTestBase
  */
@@ -50,44 +49,66 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
     private static final Pattern PROMPT_FILE_PATTERN =
             Pattern.compile("safeguard-(block|warn|allow)-(.+)\\.txt");
 
+    /** Number of tests to run before pausing. */
+    private static final int BATCH_SIZE = 4;
+
+    /** Seconds to wait between batches to let the API rate-limit window reset. */
+    private static final int BATCH_COOLDOWN_SECONDS = 65;
+
     @TestFactory
-    Collection<DynamicContainer> safeguardClassification() {
+    List<DynamicTest> safeguardClassification() {
+        // 1. Discover all prompt files, sorted by category then name
         Map<String, List<Path>> byCategory = discoverPromptFiles();
 
         Assertions.assertThat(byCategory)
                 .as("Expected prompt files for at least one category in %s", PROMPTS_DIR)
                 .isNotEmpty();
 
-        int totalTests = byCategory.values().stream().mapToInt(List::size).sum();
+        // Flatten into an ordered list of (file, category) pairs
+        List<PromptTestCase> allTests = new ArrayList<>();
+        for (var entry : byCategory.entrySet()) {
+            String category = entry.getKey();
+            for (Path file : entry.getValue()) {
+                allTests.add(new PromptTestCase(file, category));
+            }
+        }
+
         LOG.info(
                 "Discovered {} prompt test(s) across {} categor{}: {}",
-                totalTests,
+                allTests.size(),
                 byCategory.size(),
                 byCategory.size() == 1 ? "y" : "ies",
                 byCategory.keySet());
 
-        List<DynamicContainer> containers = new ArrayList<>();
-        for (var entry : byCategory.entrySet()) {
-            String category = entry.getKey();
-            List<DynamicTest> tests =
-                    entry.getValue().stream()
-                            .map(
-                                    file -> {
-                                        String name = testDisplayName(file);
-                                        return DynamicTest.dynamicTest(
-                                                name,
-                                                () ->
-                                                        assertDecision(
-                                                                file.getFileName().toString(),
-                                                                category));
-                                    })
-                            .toList();
-            containers.add(DynamicContainer.dynamicContainer(category, tests));
+        // 2. Build a flat list of DynamicTests with cooldown entries between batches
+        List<DynamicTest> tests = new ArrayList<>();
+        for (int i = 0; i < allTests.size(); i++) {
+            // Insert cooldown before every batch (except the first)
+            if (i > 0 && i % BATCH_SIZE == 0) {
+                int batchNum = i / BATCH_SIZE;
+                tests.add(
+                        DynamicTest.dynamicTest(
+                                "⏳ cooldown before batch " + (batchNum + 1),
+                                () -> {
+                                    LOG.info(
+                                            "Waiting {}s for API rate-limit window to reset...",
+                                            BATCH_COOLDOWN_SECONDS);
+                                    TimeUnit.SECONDS.sleep(BATCH_COOLDOWN_SECONDS);
+                                    LOG.info("Cooldown complete, resuming tests");
+                                }));
+            }
+
+            PromptTestCase tc = allTests.get(i);
+            String displayName = "[" + tc.category + "] " + testDisplayName(tc.file);
+            tests.add(DynamicTest.dynamicTest(displayName, () -> assertDecision(tc)));
         }
-        return containers;
+
+        return tests;
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────
+
+    private record PromptTestCase(Path file, String category) {}
 
     private static Map<String, List<Path>> discoverPromptFiles() {
         Map<String, List<Path>> byCategory = new TreeMap<>();
@@ -113,26 +134,29 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
         return file.getFileName().toString();
     }
 
-    private void assertDecision(String promptFile, String expectedDecision) {
-        LOG.info("▶ [{}] {}", expectedDecision, promptFile);
-
-        acquireRateSlot();
+    private void assertDecision(PromptTestCase tc) {
+        String promptFile = tc.file.getFileName().toString();
+        LOG.info("▶ [{}] {}", tc.category, promptFile);
 
         String prompt = loadPrompt(promptFile);
         var processInstance = startSafeguardProcess(prompt);
 
-        CamundaAssert.assertThat(processInstance)
-                .hasCompletedElements("Event_safeGuardResult")
-                .isCompleted();
+        try {
+            CamundaAssert.assertThat(processInstance)
+                    .hasCompletedElements("Event_safeGuardResult")
+                    .isCompleted();
 
-        CamundaAssert.assertThat(processInstance)
-                .hasVariableSatisfies(
-                        "safeGuardResult",
-                        Map.class,
-                        result ->
-                                Assertions.assertThat(result.get("decision"))
-                                        .isEqualTo(expectedDecision));
-
-        LOG.info("✓ [{}] {} — passed", expectedDecision, promptFile);
+            CamundaAssert.assertThat(processInstance)
+                    .hasVariableSatisfies(
+                            "safeGuardResult",
+                            Map.class,
+                            result ->
+                                    Assertions.assertThat(result.get("decision"))
+                                            .isEqualTo(tc.category));
+            LOG.info("✓ [{}] {} — passed", tc.category, promptFile);
+        } catch (AssertionError e) {
+            LOG.error("✗ [{}] {} — FAILED: {}", tc.category, promptFile, e.getMessage());
+            throw e;
+        }
     }
 }

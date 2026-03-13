@@ -12,9 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Map;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,12 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * <p>Tests are conditionally enabled when {@code GITHUB_TOKEN} is set. This allows graceful
  * skipping in local environments without credentials.
  *
- * <h3>Rate limiting</h3>
- *
- * GitHub Models enforces a burst rate limit (~5 requests per minute). The {@link
- * #acquireRateSlot()} method implements a sliding-window rate limiter shared across all tests in a
- * JVM. Tests call it before starting a process instance; it blocks until a slot is available in the
- * current window.
+ * <p>Rate limiting is handled by subclasses (e.g. batched execution with cooldown pauses).
  *
  * @see <a href="https://docs.camunda.io/docs/apis-tools/testing/utilities/">Camunda Process
  *     Test</a>
@@ -52,18 +44,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 abstract class LlmIntegrationTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(LlmIntegrationTestBase.class);
-
-    // -- Rate limiter -----------------------------------------------------------
-    /** Maximum requests allowed within the sliding window. */
-    private static final int RATE_LIMIT_MAX_REQUESTS = 4;
-
-    /** Sliding window duration. */
-    private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(1);
-
-    /** Timestamps of recent requests (sliding window). Guarded by {@code RATE_LOCK}. */
-    private static final Deque<Instant> REQUEST_TIMESTAMPS = new ArrayDeque<>();
-
-    private static final Object RATE_LOCK = new Object();
 
     // -- BPMN element IDs -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
@@ -191,47 +171,5 @@ abstract class LlmIntegrationTestBase {
                                 1))
                 .send()
                 .join();
-    }
-
-    /**
-     * Blocks until a rate-limit slot is available within the sliding window. Ensures at most {@link
-     * #RATE_LIMIT_MAX_REQUESTS} are sent per {@link #RATE_LIMIT_WINDOW}.
-     */
-    protected static void acquireRateSlot() {
-        synchronized (RATE_LOCK) {
-            while (true) {
-                Instant now = Instant.now();
-                Instant windowStart = now.minus(RATE_LIMIT_WINDOW);
-
-                // Evict timestamps outside the window
-                while (!REQUEST_TIMESTAMPS.isEmpty()
-                        && REQUEST_TIMESTAMPS.peekFirst().isBefore(windowStart)) {
-                    REQUEST_TIMESTAMPS.pollFirst();
-                }
-
-                if (REQUEST_TIMESTAMPS.size() < RATE_LIMIT_MAX_REQUESTS) {
-                    REQUEST_TIMESTAMPS.addLast(now);
-                    LOG.info(
-                            "Rate slot acquired ({}/{} in current window)",
-                            REQUEST_TIMESTAMPS.size(),
-                            RATE_LIMIT_MAX_REQUESTS);
-                    return;
-                }
-
-                // Wait until the oldest timestamp leaves the window
-                Instant oldest = REQUEST_TIMESTAMPS.peekFirst();
-                long waitMs =
-                        Duration.between(now, oldest.plus(RATE_LIMIT_WINDOW)).toMillis() + 500;
-                if (waitMs > 0) {
-                    LOG.info("Rate limit reached, waiting {}s for next slot", waitMs / 1000);
-                    try {
-                        RATE_LOCK.wait(waitMs);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-            }
-        }
     }
 }
