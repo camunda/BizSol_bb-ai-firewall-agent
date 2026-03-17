@@ -123,6 +123,12 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
         assertDecision("safeguard-allow-knowledge.txt", "allow");
     }
 
+    @Test
+    @DisplayName("Allows email summary request (legitimate customer-service feature)")
+    void allowsEmailSummaryRequest() {
+        assertDecision("safeguard-allow-email-summary.txt", "allow");
+    }
+
     // ── helper ──────────────────────────────────────────────────────────────
 
     private void assertDecision(String promptFile, String expectedDecision) {
