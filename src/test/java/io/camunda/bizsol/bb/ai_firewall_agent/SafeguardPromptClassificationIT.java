@@ -32,11 +32,11 @@ import org.slf4j.LoggerFactory;
  * <p>Supported categories: {@code block}, {@code warn}, {@code allow}. The category extracted from
  * the filename is used as the expected decision.
  *
- * <h3>Rate limiting</h3>
+ * <p>The Bedrock model can be overridden via {@code -Dtest.bedrock.model=…} (see {@link
+ * LlmIntegrationTestBase#MODEL}).
  *
- * GitHub Models enforces burst rate limits. After each test, the runner probes the API endpoint and
- * inspects {@code retry-after}, {@code x-ratelimit-remaining}, and {@code x-ratelimit-reset}
- * response headers to dynamically determine how long to pause before the next test.
+ * <p>The Bedrock region can be overridden via {@code -Dtest.bedrock.region=…} (see {@link
+ * LlmIntegrationTestBase#BEDROCK_REGION}).
  *
  * @see LlmIntegrationTestBase
  */
@@ -138,8 +138,6 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
     private void assertDecision(PromptTestCase tc) {
         String promptFile = tc.file.getFileName().toString();
         LOG.info("▶ [{}] {}", tc.category, promptFile);
-
-        waitForRateLimit();
 
         String prompt = loadPrompt(promptFile);
         var processInstance = startSafeguardProcess(prompt);

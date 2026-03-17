@@ -1,17 +1,16 @@
 name: Prompt Tests
 
 on:
-  # pull_request:
-  #   branches:
-  #     - main
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  # workflow_dispatch:
 
 jobs:
   llm-tests:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      models: read
 
     strategy:
       fail-fast: false
@@ -22,8 +21,12 @@ jobs:
             docker-tag: '8.8-SNAPSHOT'
           - name: '8.9'
             docker-tag: '8.9-SNAPSHOT'
+        model:
+          - eu.anthropic.claude-sonnet-4-6
+        region:
+          - eu-central-1
 
-    name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }})
+    name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.model }})
 
     steps:
       - name: Checkout code
@@ -35,12 +38,28 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+      
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.7.3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            products/solutions/aws_bedrock KEY;
+            products/solutions/aws_bedrock SECRET;	
+
 
       - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          AWS_BEDROCK_KEY: ${{ steps.secrets.outputs.KEY }}
+          AWS_BEDROCK_SECRET: ${{ steps.secrets.outputs.SECRET }}
         run: >
           mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true
+          -Dtest.bedrock.model=${{ matrix.model }}
+          -Dtest.bedrock.region=${{ matrix.region }}
           -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
           -Dcamunda.process-test.connectors-docker-image-version=${{ matrix.camunda-version.docker-tag }}
 
@@ -48,7 +67,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: prompt-test-reports-${{ matrix.camunda-version.name }}
+          name: prompt-test-reports-${{ matrix.camunda-version.name }}-${{ matrix.model }}
           path: |
             target/process-test-coverage/
             target/coverage-report/
