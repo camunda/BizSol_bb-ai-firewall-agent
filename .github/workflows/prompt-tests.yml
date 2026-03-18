@@ -48,8 +48,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/products/solutions/aws_bedrock KEY;
-            secret/products/solutions/aws_bedrock SECRET;	
+            secret/data/products/solutions/aws_bedrock KEY;
+            secret/data/products/solutions/aws_bedrock SECRET;	
 
 
       - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
