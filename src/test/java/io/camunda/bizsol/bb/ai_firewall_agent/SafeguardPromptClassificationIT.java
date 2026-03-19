@@ -1,11 +1,11 @@
 package io.camunda.bizsol.bb.ai_firewall_agent;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
@@ -181,7 +181,8 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
             LOG.error("Process instance {} variables:", processInstance.getProcessInstanceKey());
             for (Variable v : result.items()) {
                 String name = v.getName().toLowerCase();
-                if (name.contains("systemprompt") || name.equals("data")
+                if (name.contains("systemprompt")
+                        || name.equals("data")
                         || name.equals("userpromptsafeguarded")) continue;
                 if (name.equals("safeguardresult")) {
                     try {
@@ -189,8 +190,7 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
                         LOG.error(
                                 "  {} =\n{}",
                                 v.getName(),
-                                MAPPER.writerWithDefaultPrettyPrinter()
-                                        .writeValueAsString(json));
+                                MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(json));
                     } catch (Exception ignored) {
                         LOG.error("  {} =(not pretty-printed) {}", v.getName(), v.getValue());
                     }
