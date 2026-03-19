@@ -21,12 +21,13 @@ jobs:
             docker-tag: '8.8-SNAPSHOT'
           - name: '8.9'
             docker-tag: '8.9-SNAPSHOT'
-        model:
-          - eu.anthropic.claude-sonnet-4-6
-        region:
-          - eu-central-1
+        provider:
+          - model: eu.anthropic.claude-sonnet-4-6
+            region: eu-central-1
+          - model: eu.mistral.devstral-2-123b
+            region: eu-central-1
 
-    name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.model }})
+    name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.provider.model }})
 
     steps:
       - name: Checkout code
@@ -58,8 +59,8 @@ jobs:
           AWS_BEDROCK_SECRET: ${{ steps.secrets.outputs.SECRET }}
         run: >
           mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true
-          -Dtest.bedrock.model=${{ matrix.model }}
-          -Dtest.bedrock.region=${{ matrix.region }}
+          -Dtest.bedrock.model=${{ matrix.provider.model }}
+          -Dtest.bedrock.region=${{ matrix.provider.region }}
           -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
           -Dcamunda.process-test.connectors-docker-image-version=${{ matrix.camunda-version.docker-tag }}
 
@@ -67,7 +68,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: prompt-test-reports-${{ matrix.camunda-version.name }}-${{ matrix.model }}
+          name: prompt-test-reports-${{ matrix.camunda-version.name }}-${{ matrix.provider.model }}
           path: |
             target/process-test-coverage/
             target/coverage-report/
