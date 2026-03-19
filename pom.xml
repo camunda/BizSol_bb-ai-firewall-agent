@@ -140,6 +140,11 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skip>${skip.unit.tests}</skip>
+          <argLine>
+            @{argLine}
+            -XX:+EnableDynamicAgentLoading
+            --enable-native-access=ALL-UNNAMED
+          </argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -147,6 +152,11 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
+          <argLine>
+            @{argLine}
+            -XX:+EnableDynamicAgentLoading
+            --enable-native-access=ALL-UNNAMED
+          </argLine>
         </configuration>
         <executions>
           <execution>
