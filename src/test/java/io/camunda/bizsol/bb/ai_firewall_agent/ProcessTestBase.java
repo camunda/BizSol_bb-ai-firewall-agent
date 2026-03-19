@@ -1,5 +1,7 @@
 package io.camunda.bizsol.bb.ai_firewall_agent;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile.Replace;
 import io.camunda.client.CamundaClient;
@@ -76,17 +78,27 @@ abstract class ProcessTestBase {
                 .join();
     }
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     // ╔══════════════════════════════════════════════════════════════════════════╗
     // ║ Helper methods                                                          ║
     // ╚══════════════════════════════════════════════════════════════════════════╝
 
     /**
-     * Complete the next AI agent job with variables that set {@code responseJSONString}. Uses
-     * {@link CamundaProcessTestContext#completeJob} which waits for the job internally.
+     * Complete the next AI agent job with a JSON string that simulates a parsed LLM response.
+     * Because the connector runtime is not active in CPT, the {@code resultExpression} from the
+     * task headers is not evaluated. Instead, we parse the JSON and set {@code safeGuardResult}
+     * directly as a process variable. Uses {@link CamundaProcessTestContext#completeJob} which
+     * waits for the job internally.
      */
     void completeAgentJobWith(String responseJsonString) {
-        processTestContext.completeJob(
-                AI_AGENT_JOB_TYPE, Map.of("responseJSONString", responseJsonString));
+        try {
+            Object parsedJson = OBJECT_MAPPER.readValue(responseJsonString, Object.class);
+            processTestContext.completeJob(
+                    AI_AGENT_JOB_TYPE, Map.of("safeGuardResult", parsedJson));
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Invalid JSON in test fixture: " + e.getMessage());
+        }
     }
 
     /**
