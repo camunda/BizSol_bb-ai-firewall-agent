@@ -41,7 +41,6 @@
     <google-java-format.version>1.30.0</google-java-format.version>
 
     <!-- testing -->
-    <skip.unit.tests>false</skip.unit.tests>
     <jacoco.version>0.8.13</jacoco.version>
     <groovy.version>5.0.4</groovy.version>
     <testcontainers.version>1.21.4</testcontainers.version>
@@ -137,17 +136,7 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skip>${skip.unit.tests}</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
-        </configuration>
         <executions>
           <execution>
             <goals>

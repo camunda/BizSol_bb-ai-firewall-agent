@@ -26,7 +26,6 @@
     <!-- Testcontainers / Docker -->
     <logger name="org.testcontainers"              level="WARN" />
     <logger name="tc"                              level="ERROR" />
-    <logger name="tc.connectors"                   level="INFO" />
     <logger name="com.github.dockerjava"           level="WARN" />
 
     <!-- gRPC / Netty -->
