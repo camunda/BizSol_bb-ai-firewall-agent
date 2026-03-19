@@ -11,6 +11,35 @@
         <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
             <substring>MessageSubscriptionMapper.updateHistoryCleanupDate</substring>
         </filter>
+        <!-- Suppress JVM warnings about restricted/deprecated methods from connectors container -->
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: A terminally deprecated method</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: A restricted method</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: sun.misc.Unsafe::</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Please consider reporting this</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: java.lang.System::loadLibrary</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Use --enable-native-access</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Restricted methods will be blocked</substring>
+        </filter>
+        <!-- Suppress logback deprecation warnings from connectors container -->
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>condition' attribute in &lt;if&gt; element is deprecated</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>conditionAttributeDeprecation</substring>
+        </filter>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%-40.40logger{39}) │ %msg%n</pattern>
         </encoder>
@@ -29,7 +58,7 @@
     <!-- Testcontainers / Docker -->
     <logger name="org.testcontainers"              level="WARN" />
     <logger name="tc"                              level="ERROR" />
-    <logger name="tc.connectors"                   level="WARN" />
+    <logger name="tc.connectors"                   level="ERROR" />
     <logger name="com.github.dockerjava"           level="WARN" />
 
     <!-- gRPC / Netty -->
