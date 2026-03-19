@@ -22,24 +22,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Shared base class for LLM integration tests that use real LLM calls via GitHub Models.
+ * Shared base class for LLM integration tests that use real LLM calls via AWS Bedrock.
  *
  * <p>Unlike {@link ProcessTestBase}, this class enables the connectors runtime to handle AI agent
- * jobs. Tests in this class make actual HTTP calls to GitHub Models (gpt-4o-mini) using the {@code
- * GITHUB_TOKEN} environment variable.
+ * jobs. Tests in this class make actual calls to AWS Bedrock (Claude) using {@code AWS_BEDROCK_KEY}
+ * and {@code AWS_BEDROCK_SECRET} environment variables.
  *
- * <p>Tests are conditionally enabled when {@code GITHUB_TOKEN} is set. This allows graceful
- * skipping in local environments without credentials.
- *
- * <h3>Configuration</h3>
- *
- * <ul>
- *   <li>Connectors runtime enabled: {@code camunda.process-test.connectors-enabled=true}
- *   <li>LLM endpoint: {@code https://models.inference.ai.github.com/v1}
- *   <li>LLM model: {@code gpt-4o-mini}
- *   <li>Env var: {@code GITHUB_TOKEN} (with {@code models: read} permission in CI)
- *   <li>Assertion timeout: 3 minutes (real LLM calls can take 10-30s)
- * </ul>
+ * <p>Tests are conditionally enabled when both credentials are set. This allows graceful skipping
+ * in local environments without credentials.
  *
  * @see <a href="https://docs.camunda.io/docs/apis-tools/testing/utilities/">Camunda Process
  *     Test</a>
@@ -47,11 +37,26 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
         properties = {
             "camunda.process-test.connectors-enabled=true",
-            "camunda.process-test.connectors-secrets.GITHUB_TOKEN=${GITHUB_TOKEN:}"
+            "camunda.process-test.connectors-secrets.AWS_ACCESS_KEY=${AWS_BEDROCK_KEY:}",
+            "camunda.process-test.connectors-secrets.AWS_SECRET_KEY=${AWS_BEDROCK_SECRET:}"
         })
 abstract class LlmIntegrationTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(LlmIntegrationTestBase.class);
+
+    /** Default region when {@code test.bedrock.region} system property is not set. */
+    private static final String DEFAULT_REGION = "eu-central-1";
+
+    /** AWS Bedrock region. Override via {@code -Dtest.bedrock.region=…}. */
+    static final String BEDROCK_REGION = System.getProperty("test.bedrock.region", DEFAULT_REGION);
+
+    /** Default model when {@code test.bedrock.model} system property is not set. */
+    private static final String DEFAULT_MODEL = "eu.anthropic.claude-sonnet-4-6";
+
+    /**
+     * Model identifier used for the BPMN connector. Override via {@code -Dtest.bedrock.model=…}.
+     */
+    static final String MODEL = System.getProperty("test.bedrock.model", DEFAULT_MODEL);
 
     // -- BPMN element IDs -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
@@ -77,23 +82,22 @@ abstract class LlmIntegrationTestBase {
     @Autowired CamundaClient camundaClient;
 
     /**
-     * Before all tests: verify that {@code GITHUB_TOKEN} is available, then set a longer assertion
-     * timeout for real LLM calls. Tests are skipped when {@code GITHUB_TOKEN} is not set. In CI,
-     * the workflow must declare {@code permissions: models: read} so the default token can access
-     * GitHub Models.
+     * Before all tests: verify that AWS Bedrock credentials are available, then set a longer
+     * assertion timeout for real LLM calls. Tests are skipped when credentials are not set.
      */
     @BeforeAll
     static void configureCamundaAssert() {
-        String token = System.getenv("GITHUB_TOKEN");
+        String key = System.getenv("AWS_BEDROCK_KEY");
+        String secret = System.getenv("AWS_BEDROCK_SECRET");
         Assumptions.assumeTrue(
-                token != null && !token.isBlank(),
-                "Skipping LLM integration tests: GITHUB_TOKEN is not set");
-        CamundaAssert.setAssertionTimeout(Duration.ofSeconds(90));
+                key != null && !key.isBlank() && secret != null && !secret.isBlank(),
+                "Skipping LLM integration tests: AWS_BEDROCK_KEY/AWS_BEDROCK_SECRET not set");
+        CamundaAssert.setAssertionTimeout(Duration.ofSeconds(45));
     }
 
     /**
-     * Before each test: deploy the safeguard-agent BPMN with GitHub Models configuration. Replaces
-     * the local Ollama endpoint and empty model with GitHub Models settings.
+     * Before each test: deploy the safeguard-agent BPMN with AWS Bedrock configuration. Replaces
+     * the openaiCompatible provider with Bedrock provider settings.
      */
     @BeforeEach
     void deployProcess() {
@@ -101,17 +105,30 @@ abstract class LlmIntegrationTestBase {
                 BpmnFile.replace(
                         BPMN_SOURCE.toFile(),
                         Replace.replace(
+                                "<zeebe:input source=\"openaiCompatible\" target=\"provider.type\" />",
+                                "<zeebe:input source=\"bedrock\" target=\"provider.type\" />"),
+                        Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
-                                "<zeebe:input source=\"https://models.github.ai/inference\""
-                                        + " target=\"provider.openaiCompatible.endpoint\" />\n"
-                                        + "          <zeebe:input source=\"{{secrets.GITHUB_TOKEN}}\""
-                                        + " target=\"provider.openaiCompatible.authentication.apiKey\""
-                                        + " />"),
+                                "<zeebe:input source=\""
+                                        + BEDROCK_REGION
+                                        + "\" target=\"provider.bedrock.region\" />\n"
+                                        + "          <zeebe:input source=\"credentials\""
+                                        + " target=\"provider.bedrock.authentication.type\" />\n"
+                                        + "          <zeebe:input source=\"{{secrets.AWS_ACCESS_KEY}}\""
+                                        + " target=\"provider.bedrock.authentication.accessKey\" />\n"
+                                        + "          <zeebe:input source=\"{{secrets.AWS_SECRET_KEY}}\""
+                                        + " target=\"provider.bedrock.authentication.secretKey\" />"),
+                        Replace.replace(
+                                "<zeebe:input source=\"PT10M\""
+                                        + " target=\"provider.openaiCompatible.timeouts.timeout\" />",
+                                ""),
                         Replace.replace(
                                 "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\"openai/gpt-4.1-mini\""
-                                        + " target=\"provider.openaiCompatible.model.model\" />"),
-                        Replace.replace("retries=\"3\"", "retries=\"1\""));
+                                "<zeebe:input source=\""
+                                        + MODEL
+                                        + "\""
+                                        + " target=\"provider.bedrock.model.model\" />"),
+                        Replace.replace("retries=\"3\"", "retries=\"0\""));
 
         // --- dump the resulting BPMN for debugging (skip in CI) ---
         if (System.getenv("CI") == null) {
