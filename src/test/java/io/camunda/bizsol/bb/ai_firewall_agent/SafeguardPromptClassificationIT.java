@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,7 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
     // private static final int BATCH_COOLDOWN_SECONDS = 65;
 
     @TestFactory
+    @Execution(ExecutionMode.CONCURRENT)
     List<DynamicTest> safeguardClassification() {
         // 1. Discover all prompt files, sorted by category then name
         Map<String, List<Path>> byCategory = discoverPromptFiles();
