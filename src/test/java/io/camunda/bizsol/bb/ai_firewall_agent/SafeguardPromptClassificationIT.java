@@ -175,6 +175,8 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
                             .join();
             LOG.error("Process instance {} variables:", processInstance.getProcessInstanceKey());
             for (Variable v : result.items()) {
+                String name = v.getName().toLowerCase();
+                if (name.contains("systemprompt") || name.equals("data")) continue;
                 LOG.error("  {} = {}", v.getName(), v.getValue());
             }
         } catch (Exception ex) {
