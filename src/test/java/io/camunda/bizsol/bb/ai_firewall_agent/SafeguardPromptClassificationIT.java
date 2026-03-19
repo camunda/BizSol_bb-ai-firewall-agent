@@ -5,6 +5,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
@@ -45,6 +46,7 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
 
     private static final Logger LOG =
             LoggerFactory.getLogger(SafeguardPromptClassificationIT.class);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final Path PROMPTS_DIR = Path.of("src/test/resources/prompts");
     private static final Pattern PROMPT_FILE_PATTERN =
@@ -176,8 +178,22 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
             LOG.error("Process instance {} variables:", processInstance.getProcessInstanceKey());
             for (Variable v : result.items()) {
                 String name = v.getName().toLowerCase();
-                if (name.contains("systemprompt") || name.equals("data")) continue;
-                LOG.error("  {} = {}", v.getName(), v.getValue());
+                if (name.contains("systemprompt") || name.equals("data")
+                        || name.equals("userpromptsafeguarded")) continue;
+                if (name.equals("safeguardresult")) {
+                    try {
+                        Object json = MAPPER.readValue(v.getValue(), Object.class);
+                        LOG.error(
+                                "  {} =\n{}",
+                                v.getName(),
+                                MAPPER.writerWithDefaultPrettyPrinter()
+                                        .writeValueAsString(json));
+                    } catch (Exception ignored) {
+                        LOG.error("  {} =(not pretty-printed) {}", v.getName(), v.getValue());
+                    }
+                } else {
+                    LOG.error("  {} = {}", v.getName(), v.getValue());
+                }
             }
         } catch (Exception ex) {
             LOG.warn("Could not fetch process variables for debugging: {}", ex.getMessage());
