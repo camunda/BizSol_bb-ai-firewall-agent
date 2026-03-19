@@ -24,7 +24,7 @@ jobs:
         provider:
           - model: eu.anthropic.claude-sonnet-4-6
             region: eu-central-1
-          - model: eu.mistral.devstral-2-123b
+          - model: mistral.devstral-2-123b
             region: eu-central-1
 
     name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.provider.model }})
