@@ -20,27 +20,35 @@
     <logger name="org.springframework"             level="WARN" />
     <logger name="io.camunda.client"               level="WARN" />
     <logger name="io.camunda.zeebe"                level="ERROR" />
-    <logger name="io.camunda.process.test"         level="DEBUG" />
+    <logger name="io.camunda.process.test"         level="WARN" />
+
+    <!-- Connectors runtime – show AI agent connector activity -->
     <logger name="io.camunda.connector"            level="WARN" />
+    <logger name="io.camunda.connector.agenticai"  level="WARN" />
 
     <!-- Testcontainers / Docker -->
     <logger name="org.testcontainers"              level="WARN" />
     <logger name="tc"                              level="ERROR" />
-    <logger name="tc.connectors"                   level="INFO" />
+    <logger name="tc.connectors"                   level="WARN" />
     <logger name="com.github.dockerjava"           level="WARN" />
 
     <!-- gRPC / Netty -->
-    <logger name="io.grpc"                         level="WARN" />
-    <logger name="io.netty"                        level="WARN" />
+    <logger name="io.grpc"                         level="ERROR" />
+    <logger name="io.netty"                        level="ERROR" />
 
     <!-- WireMock -->
-    <logger name="wiremock"                        level="WARN" />
-    <logger name="com.github.tomakehurst"          level="WARN" />
+    <logger name="wiremock"                        level="ERROR" />
+    <logger name="com.github.tomakehurst"          level="ERROR" />
+
+    <!-- Jackson / HTTP -->
+    <logger name="com.fasterxml.jackson"           level="ERROR" />
+    <logger name="org.apache.http"                 level="WARN" />
+    <logger name="software.amazon"                 level="WARN" />
 
     <!-- Application code – keep verbose -->
     <logger name="io.camunda.bizsol"               level="DEBUG" />
 
-    <root level="INFO">
+    <root level="WARN">
         <appender-ref ref="CONSOLE" />
     </root>
 
