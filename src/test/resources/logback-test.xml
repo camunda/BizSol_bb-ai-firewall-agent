@@ -11,6 +11,46 @@
         <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
             <substring>MessageSubscriptionMapper.updateHistoryCleanupDate</substring>
         </filter>
+        <!--
+            JVM-level warnings from the HOST JVM (sun.misc.Unsafe, Mockito self-attach) are
+            printed to stderr and bypass logback — suppressed via JVM flags in pom.xml:
+              -XX:+EnableDynamicAgentLoading    (agent/Mockito warnings)
+              - -enable-native-access=ALL-UNNAMED (restricted method warnings)
+            JVM-level warnings from CONTAINERS (tc.connectors) are captured by Testcontainers
+            and forwarded as logback events — suppressed via MessageSubstringFilter below.
+        -->
+        <!-- Suppress logback deprecation warnings from connectors container (logged via SLF4J) -->
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>condition' attribute in &lt;if&gt; element is deprecated</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>conditionAttributeDeprecation</substring>
+        </filter>
+        <!-- Suppress JVM warnings from connectors container (captured by Testcontainers via tc.connectors) -->
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: A terminally deprecated method in sun.misc.Unsafe</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: sun.misc.Unsafe::</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Please consider reporting this</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: A restricted method</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: java.lang.System::loadLibrary</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Use --enable-native-access</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Restricted methods will be blocked</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>Sharing is only supported for boot loader classes</substring>
+        </filter>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%-40.40logger{39}) │ %msg%n</pattern>
         </encoder>
@@ -20,26 +60,35 @@
     <logger name="org.springframework"             level="WARN" />
     <logger name="io.camunda.client"               level="WARN" />
     <logger name="io.camunda.zeebe"                level="ERROR" />
-    <logger name="io.camunda.process.test"         level="DEBUG" />
+    <logger name="io.camunda.process.test"         level="WARN" />
+
+    <!-- Connectors runtime – show AI agent connector activity -->
     <logger name="io.camunda.connector"            level="WARN" />
+    <logger name="io.camunda.connector.agenticai"  level="WARN" />
 
     <!-- Testcontainers / Docker -->
     <logger name="org.testcontainers"              level="WARN" />
     <logger name="tc"                              level="ERROR" />
+    <logger name="tc.connectors"                   level="ERROR" />
     <logger name="com.github.dockerjava"           level="WARN" />
 
     <!-- gRPC / Netty -->
-    <logger name="io.grpc"                         level="WARN" />
-    <logger name="io.netty"                        level="WARN" />
+    <logger name="io.grpc"                         level="ERROR" />
+    <logger name="io.netty"                        level="ERROR" />
 
     <!-- WireMock -->
-    <logger name="wiremock"                        level="WARN" />
-    <logger name="com.github.tomakehurst"          level="WARN" />
+    <logger name="wiremock"                        level="ERROR" />
+    <logger name="com.github.tomakehurst"          level="ERROR" />
+
+    <!-- Jackson / HTTP -->
+    <logger name="com.fasterxml.jackson"           level="ERROR" />
+    <logger name="org.apache.http"                 level="WARN" />
+    <logger name="software.amazon"                 level="WARN" />
 
     <!-- Application code – keep verbose -->
     <logger name="io.camunda.bizsol"               level="DEBUG" />
 
-    <root level="INFO">
+    <root level="WARN">
         <appender-ref ref="CONSOLE" />
     </root>
 
