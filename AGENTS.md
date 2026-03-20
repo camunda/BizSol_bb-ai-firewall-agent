@@ -1,5 +1,11 @@
 # Camunda Business Solution Firewall Agent
 
+## Git Policy
+
+- **NEVER run `git add`, `git commit`, `git push`, or any other git write command** unless explicitly instructed to do so by the user.
+- The user controls staging and committing. Running `git add` from the terminal overwrites any staging decisions the user has made in the VS Code git pane.
+- If you need to inform the user about files to commit, describe them in text — do not stage or commit them.
+
 ## Commit Message Guidelines
 
 Follow conventions in COMMIT-MESSAGE-GUIDELINE.md
