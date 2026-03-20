@@ -2,6 +2,8 @@ package io.camunda.bizsol.bb.ai_firewall_agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssert;
@@ -169,8 +171,47 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
             LOG.info("✓ [{}] {} — passed", tc.category, promptFile);
         } catch (AssertionError e) {
             LOG.error("✗ [{}] {} — FAILED: {}", tc.category, promptFile, e.getMessage());
+            logEscalationDiagnostics(processInstance);
             logProcessVariables(processInstance);
             throw e;
+        }
+    }
+
+    private static final List<String> KNOWN_ESCALATION_EVENTS =
+            List.of(
+                    "Event_task-agent-failed",
+                    "Event_max-iterations-reached",
+                    "Event_bad-agent-output",
+                    "Event_max-user-input-exceeded");
+
+    private void logEscalationDiagnostics(ProcessInstanceEvent processInstance) {
+        try {
+            SearchResponse<ElementInstance> result =
+                    camundaClient
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                    f ->
+                                            f.processInstanceKey(
+                                                            processInstance.getProcessInstanceKey())
+                                                    .state(ElementInstanceState.COMPLETED))
+                            .send()
+                            .join();
+            List<String> fired =
+                    result.items().stream()
+                            .map(ElementInstance::getElementId)
+                            .filter(KNOWN_ESCALATION_EVENTS::contains)
+                            .toList();
+            if (fired.isEmpty()) {
+                LOG.error(
+                        "  No known escalation events were completed — process may be stuck or"
+                                + " timed out before reaching any escalation path.");
+            } else {
+                LOG.error("  Escalation event(s) fired: {}", fired);
+            }
+        } catch (Exception ex) {
+            LOG.warn(
+                    "Could not fetch element instances for escalation diagnostics: {}",
+                    ex.getMessage());
         }
     }
 
