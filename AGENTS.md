@@ -77,6 +77,14 @@ The system prompt exists in three locations that must always stay in sync:
 
 Whenever `safeguard-systemprompt.txt` is changed, the same change **must** be propagated in FEEL syntax to both `safeguard-systemprompt-feel.txt` and the `_systemPrompt` default value in `StartEvent_1` of `safeguard-agent.bpmn`.
 
+To sync all three locations after editing the canonical prompt, run:
+
+```bash
+mvn compile exec:java
+```
+
+This executes `SyncPrompt` which escapes the plain-text prompt into a FEEL string literal, validates it via the FEEL-scala engine (round-trip evaluation), writes the FEEL file, and updates the BPMN embedding.
+
 ## Important Notes for AI Agents
 
 - **Always run `mvn spotless:apply` before committing** to ensure code formatting compliance
