@@ -12,13 +12,12 @@
             <substring>MessageSubscriptionMapper.updateHistoryCleanupDate</substring>
         </filter>
         <!--
-            JVM-level warnings (sun.misc.Unsafe, restricted methods, dynamic agent loading,
-            Mockito self-attach, Netty Unsafe access) are printed to stderr by the JVM itself
-            and bypass logback entirely. They are suppressed via JVM flags in pom.xml:
+            JVM-level warnings from the HOST JVM (sun.misc.Unsafe, Mockito self-attach) are
+            printed to stderr and bypass logback — suppressed via JVM flags in pom.xml:
               -XX:+EnableDynamicAgentLoading    (agent/Mockito warnings)
               - -enable-native-access=ALL-UNNAMED (restricted method warnings)
-            Remaining Testcontainer stderr output (e.g. logback deprecation warnings from the
-            connectors container) cannot be filtered because it comes from a child process.
+            JVM-level warnings from CONTAINERS (tc.connectors) are captured by Testcontainers
+            and forwarded as logback events — suppressed via MessageSubstringFilter below.
         -->
         <!-- Suppress logback deprecation warnings from connectors container (logged via SLF4J) -->
         <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
@@ -26,6 +25,31 @@
         </filter>
         <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
             <substring>conditionAttributeDeprecation</substring>
+        </filter>
+        <!-- Suppress JVM warnings from connectors container (captured by Testcontainers via tc.connectors) -->
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: A terminally deprecated method in sun.misc.Unsafe</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: sun.misc.Unsafe::</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Please consider reporting this</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: A restricted method</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: java.lang.System::loadLibrary</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Use --enable-native-access</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>WARNING: Restricted methods will be blocked</substring>
+        </filter>
+        <filter class="io.camunda.bizsol.bb.ai_firewall_agent.config.MessageSubstringFilter">
+            <substring>Sharing is only supported for boot loader classes</substring>
         </filter>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%-40.40logger{39}) │ %msg%n</pattern>

@@ -105,6 +105,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- FEEL-scala engine for prompt sync tool -->
+    <dependency>
+      <groupId>org.camunda.feel</groupId>
+      <artifactId>feel-engine</artifactId>
+      <version>1.21.0</version>
+    </dependency>
+
     <!-- Groovy for Maven plugin -->
     <dependency>
       <groupId>org.apache.groovy</groupId>
@@ -166,6 +173,14 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <mainClass>io.camunda.bizsol.bb.ai_firewall_agent.tools.SyncPrompt</mainClass>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
