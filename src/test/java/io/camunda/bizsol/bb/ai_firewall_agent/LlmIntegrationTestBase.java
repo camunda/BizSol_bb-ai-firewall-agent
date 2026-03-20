@@ -58,8 +58,10 @@ abstract class LlmIntegrationTestBase {
      */
     static final String MODEL = System.getProperty("test.bedrock.model", DEFAULT_MODEL);
 
-    // -- BPMN element IDs -------------------------------------------------------
+    // -- Process defaults -------------------------------------------------------
     static final String PROCESS_ID = "safeguard-agent";
+    static final double MIN_CONFIDENCE = 0.8;
+    static final int MAX_TRIES = 3;
 
     // -- Paths ------------------------------------------------------------------
     static final Path BPMN_SOURCE = Path.of("camunda-artifacts/safeguard-agent.bpmn");
@@ -187,9 +189,9 @@ abstract class LlmIntegrationTestBase {
                                 "systemPrompt",
                                 SYSTEM_PROMPT,
                                 "minConfidence",
-                                0.5,
+                                MIN_CONFIDENCE,
                                 "maxTries",
-                                1))
+                                MAX_TRIES))
                 .send()
                 .join();
     }
