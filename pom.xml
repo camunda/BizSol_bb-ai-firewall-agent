@@ -41,6 +41,7 @@
     <google-java-format.version>1.30.0</google-java-format.version>
 
     <!-- testing -->
+    <skip.unit.tests>false</skip.unit.tests>
     <jacoco.version>0.8.13</jacoco.version>
     <groovy.version>5.0.4</groovy.version>
     <testcontainers.version>1.21.4</testcontainers.version>
@@ -104,6 +105,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- FEEL-scala engine for prompt sync tool -->
+    <dependency>
+      <groupId>org.camunda.feel</groupId>
+      <artifactId>feel-engine</artifactId>
+      <version>1.21.0</version>
+    </dependency>
+
     <!-- Groovy for Maven plugin -->
     <dependency>
       <groupId>org.apache.groovy</groupId>
@@ -136,7 +144,27 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skip>${skip.unit.tests}</skip>
+          <argLine>
+            @{argLine}
+            -XX:+EnableDynamicAgentLoading
+            --enable-native-access=ALL-UNNAMED
+          </argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
+          <argLine>
+            @{argLine}
+            -XX:+EnableDynamicAgentLoading
+            --enable-native-access=ALL-UNNAMED
+          </argLine>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -145,6 +173,14 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <mainClass>io.camunda.bizsol.bb.ai_firewall_agent.tools.SyncPrompt</mainClass>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>

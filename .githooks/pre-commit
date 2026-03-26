@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Pre-commit hook: auto-format Java sources with Spotless
+
+mvn spotless:apply -q
+git add -u
