@@ -68,17 +68,6 @@
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="Flow_0qte4m9" sourceRef="Event_task-agent-failed" targetRef="Event_13jpl3c" />
     </bpmn:subProcess>
-    <bpmn:subProcess id="Activity_0tak9fv" triggeredByEvent="true">
-      <bpmn:startEvent id="Event_json-worker-error" name="JSON Worker error">
-        <bpmn:outgoing>Flow_1t976vm</bpmn:outgoing>
-        <bpmn:escalationEventDefinition id="EscalationEventDefinition_0sky7zn" escalationRef="Escalation_2dprnft" />
-      </bpmn:startEvent>
-      <bpmn:endEvent id="Event_1a6l2i7" name="create an Incident">
-        <bpmn:incoming>Flow_1t976vm</bpmn:incoming>
-        <bpmn:errorEventDefinition id="ErrorEventDefinition_1wxjmvh" errorRef="Error_0ellcg2" />
-      </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_1t976vm" sourceRef="Event_json-worker-error" targetRef="Event_1a6l2i7" />
-    </bpmn:subProcess>
     <bpmn:subProcess id="Activity_1l606vv" triggeredByEvent="true">
       <bpmn:startEvent id="Event_bad-agent-output" name="Error in Agent&#39;s JSON output">
         <bpmn:outgoing>Flow_18cvood</bpmn:outgoing>
@@ -208,43 +197,24 @@ Note: systemPrompt is optional; defaults to embedded template in safeguard-agent
         <di:waypoint x="223" y="820" />
         <di:waypoint x="367" y="820" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="BPMNShape_09jeibf" bpmnElement="Activity_0tak9fv" isExpanded="true">
-        <dc:Bounds x="150" y="920" width="295" height="140" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_0zf0wqo" bpmnElement="Event_json-worker-error">
-        <dc:Bounds x="187" y="962" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="172" y="1005" width="68" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_0gdbyjt" bpmnElement="Event_1a6l2i7">
-        <dc:Bounds x="367" y="962" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="341" y="1005" width="88" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="BPMNEdge_1s8ovyx" bpmnElement="Flow_1t976vm">
-        <di:waypoint x="223" y="980" />
-        <di:waypoint x="367" y="980" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="BPMNShape_1dxhlm3" bpmnElement="Activity_1l606vv" isExpanded="true">
-        <dc:Bounds x="150" y="1080" width="295" height="140" />
+        <dc:Bounds x="150" y="950" width="295" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_1cz8ibc" bpmnElement="Event_bad-agent-output">
-        <dc:Bounds x="187" y="1122" width="36" height="36" />
+        <dc:Bounds x="187" y="992" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="169" y="1165" width="75" height="27" />
+          <dc:Bounds x="169" y="1035" width="75" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_186z491" bpmnElement="Event_0ryz4lf">
-        <dc:Bounds x="367" y="1122" width="36" height="36" />
+        <dc:Bounds x="367" y="992" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="341" y="1165" width="88" height="14" />
+          <dc:Bounds x="341" y="1035" width="88" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="BPMNEdge_03uoyam" bpmnElement="Flow_18cvood">
-        <di:waypoint x="223" y="1140" />
-        <di:waypoint x="367" y="1140" />
+        <di:waypoint x="223" y="1010" />
+        <di:waypoint x="367" y="1010" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="TextAnnotation_StartVariables_di" bpmnElement="TextAnnotation_StartVariables">
         <dc:Bounds x="160" y="210" width="300" height="100" />

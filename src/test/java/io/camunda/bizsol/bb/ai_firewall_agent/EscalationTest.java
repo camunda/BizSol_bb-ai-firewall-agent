@@ -27,8 +27,6 @@ import org.springframework.boot.test.context.SpringBootTest;
  *   <li><b>safeguard_max-iterations-reached</b> – max retry count exhausted
  *   <li><b>safeguard_task-agent-failed</b> – AI agent task throws a BPMN error
  *   <li><b>safeguard_bad-agent-output</b> – LLM response missing required JSON fields
- *   <li><b>safeguard_json-worker-error</b> – JSON converter worker fails to parse response (tested
- *       in {@link JsonWorkerErrorTest})
  * </ol>
  */
 @SpringBootTest
@@ -102,7 +100,7 @@ class EscalationTest extends ProcessTestBase {
             var processInstance = startProcess(vars);
 
             // 1st iteration: complete the AI agent job with a valid but
-            //    LOW-confidence response → json-converter parses it →
+            //    LOW-confidence response → connector parses the JSON (parseJson=true) →
             //    confidence < minConfidence → loop back → _current_try now > maxTries
             String lowConfidenceJson =
                     """
@@ -110,8 +108,8 @@ class EscalationTest extends ProcessTestBase {
                     """;
             completeAgentJobWith(lowConfidenceJson);
 
-            // The JsonConverterWorker handles the json-converter job automatically.
-            // After parsing, safeGuardResult.confidence = 0.3 < 0.95 →
+            // The connector's resultExpression extracts safeGuardResult from
+            // response.responseJson. safeGuardResult.confidence = 0.3 < 0.95 →
             //   confidence too low → "Retain history of safeGuard results" (script) →
             //   "Refine system prompt" (script) → loops back to iteration check →
             //   _current_try = 2 > _maxTries = 1 → escalation
@@ -178,7 +176,8 @@ class EscalationTest extends ProcessTestBase {
 
             // Complete the AI agent job with JSON that is valid but does NOT
             // contain the required 'decision' and 'confidence' fields.
-            // After json-converter parses it, the gateway check
+            // The connector's resultExpression extracts safeGuardResult
+            // via get or else(response.responseJson, {}), then the gateway check
             //   is defined(safeGuardResult.decision) and
             //   is defined(safeGuardResult.confidence)
             // evaluates to false → escalation
