@@ -4,7 +4,17 @@ on:
   pull_request:
     branches:
       - main
-  # workflow_dispatch:
+  # for manual testing
+  workflow_dispatch:
+    inputs:
+      camunda-version:
+        description: 'Camunda version to test (e.g. 8.8 or 8.9)'
+        required: false
+        default: 'all'
+      model:
+        description: 'Bedrock model to test (e.g. eu.anthropic.claude-sonnet-4-6 or mistral.devstral-2-123b)'
+        required: false
+        default: 'all'
 
 jobs:
   llm-tests:
@@ -50,15 +60,19 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/solutions/aws_bedrock KEY;
-            secret/data/products/solutions/aws_bedrock SECRET;	
+            secret/data/products/solutions/aws_bedrock SECRET;
 
-
+      ## Spring's ${AWS_BEDROCK_KEY:} placeholder in @SpringBootTest(properties) resolves system properties 
+      ## before env vars. This ensures the secrets are available to camunda.process-test.connectors-secrets.* 
+      ## even containers where the env-var-to-secret mapping may behave differently.
       - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
         env:
           AWS_BEDROCK_KEY: ${{ steps.secrets.outputs.KEY }}
           AWS_BEDROCK_SECRET: ${{ steps.secrets.outputs.SECRET }}
         run: >
           mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true
+          -DAWS_BEDROCK_KEY="${{ steps.secrets.outputs.KEY }}"
+          -DAWS_BEDROCK_SECRET="${{ steps.secrets.outputs.SECRET }}"
           -Dtest.bedrock.model=${{ matrix.provider.model }}
           -Dtest.bedrock.region=${{ matrix.provider.region }}
           -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
