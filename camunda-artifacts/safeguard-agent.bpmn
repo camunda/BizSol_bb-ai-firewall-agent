@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.45.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
-  <bpmn:process id="safeguard-agent-applied" name="safeguard-agent" isExecutable="true">
+  <bpmn:process id="safeguard-agent" name="safeguard-agent" isExecutable="true">
     <bpmn:boundaryEvent id="Event_00rqlj4" attachedToRef="Activity_1t4newl">
       <bpmn:extensionElements>
         <zeebe:ioMapping>
@@ -210,7 +210,7 @@
   <bpmn:error id="Error_0spp02z" name="jsonConversionError" errorCode="jsonConversionError" />
   <bpmn:escalation id="Escalation_2d9sbdf" name="safeguard_json-worker-error" escalationCode="safeguard_json-worker-error" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="safeguard-agent-applied">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="safeguard-agent">
       <bpmndi:BPMNShape id="Event_10kntrl_di" bpmnElement="Event_task-agent-failed">
         <dc:Bounds x="792" y="412" width="36" height="36" />
       </bpmndi:BPMNShape>
