@@ -1,0 +1,97 @@
+name: Prompt Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  # for manual testing
+  workflow_dispatch:
+    inputs:
+      camunda-version:
+        description: 'Camunda version to test (e.g. 8.8 or 8.9)'
+        required: false
+        default: 'all'
+      model:
+        description: 'Bedrock model to test (e.g. eu.anthropic.claude-sonnet-4-6 or mistral.devstral-2-123b)'
+        required: false
+        default: 'all'
+
+jobs:
+  llm-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      # max-parallel: 1
+      matrix:
+        camunda-version:
+          - name: '8.8'
+            docker-tag: '8.8-SNAPSHOT'
+          - name: '8.9'
+            docker-tag: '8.9-SNAPSHOT'
+        provider:
+          - model: eu.anthropic.claude-sonnet-4-6
+            region: eu-central-1
+            safe-name: claude-sonnet-4-6
+          - model: mistral.devstral-2-123b
+            region: eu-central-1
+            safe-name: devstral-2-123b
+          - model: openai.gpt-oss-120b-1:0
+            region: eu-central-1
+            safe-name: gpt-oss-120b-1
+          - model: eu.amazon.nova-2-lite-v1:0
+            region: eu-central-1
+            safe-name: nova-2-lite-v1
+
+    name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.provider.model }})
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/solutions/aws_bedrock KEY | AWS_BEDROCK_KEY;
+            secret/data/products/solutions/aws_bedrock SECRET | AWS_BEDROCK_SECRET;
+
+      ## Spring's ${AWS_BEDROCK_KEY:} placeholder in @SpringBootTest(properties) resolves system properties 
+      ## before env vars. This ensures the secrets are available to camunda.process-test.connectors-secrets.* 
+      ## even containers where the env-var-to-secret mapping may behave differently.
+      - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
+        env:
+          CAMUNDA_CONNECTOR_SECRETPROVIDER_ENVIRONMENT_PREFIX: ""
+        run: >
+          mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true -Dskip.cpt.coverage=true
+          -DAWS_BEDROCK_KEY="${{ env.AWS_BEDROCK_KEY }}"
+          -DAWS_BEDROCK_SECRET="${{ env.AWS_BEDROCK_SECRET }}"
+          -Dtest.bedrock.model=${{ matrix.provider.model }}
+          -Dtest.bedrock.region=${{ matrix.provider.region }}
+          -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
+          -Dcamunda.process-test.connectors-docker-image-version=${{ matrix.camunda-version.docker-tag }}
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: prompt-test-reports-${{ matrix.camunda-version.name }}-${{ matrix.provider.safe-name }}
+          path: |
+            target/process-test-coverage/
+            target/coverage-report/
+            target/failsafe-reports/
+          retention-days: 7
