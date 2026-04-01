@@ -27,8 +27,8 @@ jobs:
       # max-parallel: 1
       matrix:
         camunda-version:
-          # - name: '8.8'
-          #   docker-tag: '8.8-SNAPSHOT'
+          - name: '8.8'
+            docker-tag: '8.8-SNAPSHOT'
           - name: '8.9'
             docker-tag: '8.9-SNAPSHOT'
         provider:
@@ -76,8 +76,6 @@ jobs:
       - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
         env:
           CAMUNDA_CONNECTOR_SECRETPROVIDER_ENVIRONMENT_PREFIX: ""
-        #   AWS_BEDROCK_KEY: ${{ steps.secrets.outputs.KEY }}
-        #   AWS_BEDROCK_SECRET: ${{ steps.secrets.outputs.SECRET }}
         run: >
           mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true -Dskip.cpt.coverage=true
           -DAWS_BEDROCK_KEY="${{ env.AWS_BEDROCK_KEY }}"
