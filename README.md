@@ -130,6 +130,16 @@ Common escalation paths include:
 
 The usage example catches these escalations and converts them into BPMN errors so operators can review failures
 
+## Development setup
+
+### Enable pre-commit formatting hook
+
+```bash
+git config core.hooksPath .githooks
+```
+
+This activates a pre-commit hook that runs `mvn spotless:apply` automatically before each commit.
+
 ## Running tests
 
 ### Requirements

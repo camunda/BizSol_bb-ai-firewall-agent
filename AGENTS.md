@@ -1,5 +1,11 @@
 # Camunda Business Solution Firewall Agent
 
+## Git Policy
+
+- **NEVER run `git add`, `git commit`, `git push`, or any other git write command** unless explicitly instructed to do so by the user.
+- The user controls staging and committing. Running `git add` from the terminal overwrites any staging decisions the user has made in the VS Code git pane.
+- If you need to inform the user about files to commit, describe them in text — do not stage or commit them.
+
 ## Commit Message Guidelines
 
 Follow conventions in COMMIT-MESSAGE-GUIDELINE.md
@@ -66,6 +72,24 @@ mvn spring-boot:run
 - Process Definitions: Located in camunda-artifacts/ directory
 - Main Process: safeguard-agent.bpmn (Process ID: safeguard-agent)
 - System Prompt Template: safeguard-systemprompt.txt
+
+### System Prompt Sync Process
+
+The system prompt exists in three locations that must always stay in sync:
+
+1. **`camunda-artifacts/safeguard-systemprompt.txt`** — canonical plain-text source
+2. **`camunda-artifacts/safeguard-systemprompt-feel.txt`** — FEEL string variant (escaped `\n`, `\"`, unicode escapes like `\u2014`)
+3. **`camunda-artifacts/safeguard-agent.bpmn`** — embedded in `StartEvent_1`'s output mapping for variable `_systemPrompt` (XML-escaped FEEL: `\n`, `\&#34;`, `&#39;`, `\u2014`)
+
+Whenever `safeguard-systemprompt.txt` is changed, the same change **must** be propagated in FEEL syntax to both `safeguard-systemprompt-feel.txt` and the `_systemPrompt` default value in `StartEvent_1` of `safeguard-agent.bpmn`.
+
+To sync all three locations after editing the canonical prompt, run:
+
+```bash
+mvn compile exec:java
+```
+
+This executes `SyncPrompt` which escapes the plain-text prompt into a FEEL string literal, validates it via the FEEL-scala engine (round-trip evaluation), writes the FEEL file, and updates the BPMN embedding.
 
 ## Important Notes for AI Agents
 
