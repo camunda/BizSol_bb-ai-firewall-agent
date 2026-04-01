@@ -61,8 +61,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/solutions/aws_bedrock | AWS_BEDROCK_KEY;
-            secret/data/products/solutions/aws_bedrock | AWS_BEDROCK_SECRET;
+            secret/data/products/solutions/aws_bedrock KEY | AWS_BEDROCK_KEY;
+            secret/data/products/solutions/aws_bedrock SECRET | AWS_BEDROCK_SECRET;
 
       ## Spring's ${AWS_BEDROCK_KEY:} placeholder in @SpringBootTest(properties) resolves system properties 
       ## before env vars. This ensures the secrets are available to camunda.process-test.connectors-secrets.* 
