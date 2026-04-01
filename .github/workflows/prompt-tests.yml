@@ -71,7 +71,8 @@ jobs:
       ## before env vars. This ensures the secrets are available to camunda.process-test.connectors-secrets.* 
       ## even containers where the env-var-to-secret mapping may behave differently.
       - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
-        # env:
+        env:
+          CAMUNDA_CONNECTOR_SECRETPROVIDER_ENVIRONMENT_PREFIX: ""
         #   AWS_BEDROCK_KEY: ${{ steps.secrets.outputs.KEY }}
         #   AWS_BEDROCK_SECRET: ${{ steps.secrets.outputs.SECRET }}
         run: >
