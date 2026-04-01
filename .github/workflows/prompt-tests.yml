@@ -27,8 +27,8 @@ jobs:
       # max-parallel: 1
       matrix:
         camunda-version:
-          - name: '8.8'
-            docker-tag: '8.8-SNAPSHOT'
+          # - name: '8.8'
+          #   docker-tag: '8.8-SNAPSHOT'
           - name: '8.9'
             docker-tag: '8.9-SNAPSHOT'
         provider:
@@ -41,6 +41,9 @@ jobs:
           - model: openai.gpt-oss-120b-1:0
             region: eu-central-1
             safe-name: gpt-oss-120b-1
+          - model: amazon.nova-2-lite-v1:0
+            region: eu-central-1
+            safe-name: nova-2-lite-v1
 
     name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.provider.model }})
 

@@ -39,7 +39,7 @@ import org.springframework.boot.test.context.SpringBootTest;
             "camunda.process-test.connectors-enabled=true",
             "camunda.process-test.connectors-secrets.AWS_ACCESS_KEY=${AWS_BEDROCK_KEY:}",
             "camunda.process-test.connectors-secrets.AWS_SECRET_KEY=${AWS_BEDROCK_SECRET:}",
-            "camunda.connector.secretprovider.environment.prefix=''"
+            "camunda.connector.secret-provider.environment.prefix="
         })
 abstract class LlmIntegrationTestBase {
 
