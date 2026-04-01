@@ -34,10 +34,13 @@ jobs:
         provider:
           - model: eu.anthropic.claude-sonnet-4-6
             region: eu-central-1
+            safe-name: claude-sonnet-4-6
           - model: mistral.devstral-2-123b
             region: eu-central-1
+            safe-name: devstral-2-123b
           - model: openai.gpt-oss-120b-1:0
             region: eu-central-1
+            safe-name: gpt-oss-120b-1
 
     name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.provider.model }})
 
@@ -84,7 +87,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: prompt-test-reports-${{ matrix.camunda-version.name }}-${{ matrix.provider.model }}
+          name: prompt-test-reports-${{ matrix.camunda-version.name }}-${{ matrix.provider.safe-name }}
           path: |
             target/process-test-coverage/
             target/coverage-report/
