@@ -61,7 +61,7 @@ const PROCESS_ID = 'safeguard-agent';
 const MIN_CONFIDENCE = 0.8;
 const MAX_TRIES = 3;
 const PROMPT_PATTERN = /^safeguard-(block|warn|allow)-(.+)\.txt$/;
-const DEFAULT_MODEL = 'eu.anthropic.claude-sonnet-4-6';
+const DEFAULT_MODEL = 'mistral.devstral-2-123b';
 const DEFAULT_REGION = 'eu-central-1';
 
 // ── CLI arg parsing ───────────────────────────────────────────────────────────

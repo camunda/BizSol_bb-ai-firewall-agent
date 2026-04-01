@@ -33,6 +33,8 @@
 
     <!-- BPMN test coverage threshold for build to fail-->
     <cpt.coverage.min>0.60</cpt.coverage.min>
+    <!-- Set to true to skip CPT coverage enforcement (e.g. for LLM integration tests) -->
+    <skip.cpt.coverage>false</skip.cpt.coverage>
     <!-- Unit LOC test coverage threshold for build to fail -->
     <unittest.coverage.min>0.80</unittest.coverage.min>
 
@@ -311,6 +313,11 @@
               <scripts>
                 <script><![CDATA[
                                    import groovy.json.JsonSlurper
+
+                                   if (project.properties['skip.cpt.coverage'] == 'true') {
+                                     println "CPT coverage check skipped (skip.cpt.coverage=true)"
+                                     return
+                                   }
 
                                    println "CPT Coverage Verification Groovy Script Starting ..."
 

@@ -36,6 +36,8 @@ jobs:
             region: eu-central-1
           - model: mistral.devstral-2-123b
             region: eu-central-1
+          - model: openai.gpt-oss-120b-1:0
+            region: eu-central-1
 
     name: Prompt Tests w/ (Camunda ${{ matrix.camunda-version.name }}, ${{ matrix.provider.model }})
 
@@ -59,20 +61,20 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/solutions/aws_bedrock KEY;
-            secret/data/products/solutions/aws_bedrock SECRET;
+            secret/data/products/solutions/aws_bedrock | AWS_BEDROCK_KEY;
+            secret/data/products/solutions/aws_bedrock | AWS_BEDROCK_SECRET;
 
       ## Spring's ${AWS_BEDROCK_KEY:} placeholder in @SpringBootTest(properties) resolves system properties 
       ## before env vars. This ensures the secrets are available to camunda.process-test.connectors-secrets.* 
       ## even containers where the env-var-to-secret mapping may behave differently.
       - name: Run prompt tests (Camunda ${{ matrix.camunda-version.name }})
-        env:
-          AWS_BEDROCK_KEY: ${{ steps.secrets.outputs.KEY }}
-          AWS_BEDROCK_SECRET: ${{ steps.secrets.outputs.SECRET }}
+        # env:
+        #   AWS_BEDROCK_KEY: ${{ steps.secrets.outputs.KEY }}
+        #   AWS_BEDROCK_SECRET: ${{ steps.secrets.outputs.SECRET }}
         run: >
-          mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true
-          -DAWS_BEDROCK_KEY="${{ steps.secrets.outputs.KEY }}"
-          -DAWS_BEDROCK_SECRET="${{ steps.secrets.outputs.SECRET }}"
+          mvn verify -B -Dskip.unit.tests=true -Djacoco.skip=true -Dskip.cpt.coverage=true
+          -DAWS_BEDROCK_KEY="${{ env.AWS_BEDROCK_KEY }}"
+          -DAWS_BEDROCK_SECRET="${{ env.AWS_BEDROCK_SECRET }}"
           -Dtest.bedrock.model=${{ matrix.provider.model }}
           -Dtest.bedrock.region=${{ matrix.provider.region }}
           -Dcamunda.process-test.camunda-docker-image-version=${{ matrix.camunda-version.docker-tag }}
