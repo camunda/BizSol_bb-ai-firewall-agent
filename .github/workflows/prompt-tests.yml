@@ -41,7 +41,7 @@ jobs:
           - model: openai.gpt-oss-120b-1:0
             region: eu-central-1
             safe-name: gpt-oss-120b-1
-          - model: amazon.nova-2-lite-v1:0
+          - model: eu.amazon.nova-2-lite-v1:0
             region: eu-central-1
             safe-name: nova-2-lite-v1
 
