@@ -148,7 +148,7 @@ class SafeguardPromptClassificationIT extends LlmIntegrationTestBase {
 
         try {
             CamundaAssert.assertThat(processInstance)
-                    .hasCompletedElements("Event_safeGuardResult")
+                    .hasCompletedElements("EndEvent_safeGuardResult")
                     .isCompleted();
 
             CamundaAssert.assertThat(processInstance)

@@ -79,9 +79,9 @@ The system prompt exists in three locations that must always stay in sync:
 
 1. **`camunda-artifacts/safeguard-systemprompt.txt`** — canonical plain-text source
 2. **`camunda-artifacts/safeguard-systemprompt-feel.txt`** — FEEL string variant (escaped `\n`, `\"`, unicode escapes like `\u2014`)
-3. **`camunda-artifacts/safeguard-agent.bpmn`** — embedded in `StartEvent_1`'s output mapping for variable `_systemPrompt` (XML-escaped FEEL: `\n`, `\&#34;`, `&#39;`, `\u2014`)
+3. **`camunda-artifacts/safeguard-agent.bpmn`** — embedded in `StartEvent`'s output mapping for variable `_systemPrompt` (XML-escaped FEEL: `\n`, `\&#34;`, `&#39;`, `\u2014`)
 
-Whenever `safeguard-systemprompt.txt` is changed, the same change **must** be propagated in FEEL syntax to both `safeguard-systemprompt-feel.txt` and the `_systemPrompt` default value in `StartEvent_1` of `safeguard-agent.bpmn`.
+Whenever `safeguard-systemprompt.txt` is changed, the same change **must** be propagated in FEEL syntax to both `safeguard-systemprompt-feel.txt` and the `_systemPrompt` default value in `StartEvent` of `safeguard-agent.bpmn`.
 
 To sync all three locations after editing the canonical prompt, run:
 

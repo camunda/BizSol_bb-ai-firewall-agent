@@ -26,7 +26,7 @@
       <bpmn:incoming>Flow_0ax3y8m</bpmn:incoming>
       <bpmn:escalationEventDefinition id="EscalationEventDefinition_1cedlhl" escalationRef="Escalation_0mq1k79" />
     </bpmn:intermediateThrowEvent>
-    <bpmn:endEvent id="Event_safeGuardResult" name="Prompt is safeguarded">
+    <bpmn:endEvent id="EndEvent_safeGuardResult" name="Prompt is safeguarded">
       <bpmn:documentation>{
   "decision": "allow" | "warn" | "block",
   "risk_labels": [
@@ -54,7 +54,7 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_06pxq2e" sourceRef="Activity_1thd7s5" targetRef="Gateway_0clysfw" />
     <bpmn:sequenceFlow id="Flow_0ax3y8m" name="error within agent task occured" sourceRef="Event_00rqlj4" targetRef="Event_task-agent-failed" />
-    <bpmn:sequenceFlow id="Flow_0lt0315" sourceRef="StartEvent_1" targetRef="Gateway_1p1pn0e" />
+    <bpmn:sequenceFlow id="Flow_0lt0315" sourceRef="StartEvent" targetRef="Gateway_1p1pn0e" />
     <bpmn:sequenceFlow id="Flow_14bythg" sourceRef="Activity_1t4newl" targetRef="Activity_1thd7s5" />
     <bpmn:sequenceFlow id="Flow_025qfym" name="no" sourceRef="Gateway_0clysfw" targetRef="Event_bad-agent-output">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=(is defined(safeGuardResult.decision) and is defined(safeGuardResult.confidence)) = false</bpmn:conditionExpression>
@@ -113,7 +113,7 @@
       <bpmn:incoming>Flow_1p2523e</bpmn:incoming>
       <bpmn:outgoing>Flow_14bythg</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:startEvent id="StartEvent_1" name="A Prompt needs safeguarding">
+    <bpmn:startEvent id="StartEvent" name="A Prompt needs safeguarding">
       <bpmn:extensionElements>
         <zeebe:ioMapping>
           <zeebe:output source="=get or else(maxTries, 3)" target="_maxTries" />
@@ -149,7 +149,7 @@
       <bpmn:outgoing>Flow_0yl024c</bpmn:outgoing>
       <bpmn:outgoing>Flow_0kpnkft</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_0yl024c" sourceRef="Gateway_0d4d9o9" targetRef="Event_safeGuardResult">
+    <bpmn:sequenceFlow id="Flow_0yl024c" sourceRef="Gateway_0d4d9o9" targetRef="EndEvent_safeGuardResult">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=(is defined(safeGuardResult.confidence) and safeGuardResult.confidence &gt;= _minConfidence) = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0kpnkft" sourceRef="Gateway_0d4d9o9" targetRef="Activity_0snthod">
@@ -200,7 +200,7 @@
       <bpmn:incoming>Flow_0kpnkft</bpmn:incoming>
       <bpmn:outgoing>Flow_02um237</bpmn:outgoing>
     </bpmn:scriptTask>
-    <bpmn:textAnnotation id="TextAnnotation_0bwbzo7">
+    <bpmn:textAnnotation id="StartElement_TextAnnotation">
       <bpmn:text>- `userPromptToSafeguard` (string) for user prompt; **default**: null
 - `systemPrompt` (string) for system prompt; **default**: (see file `safeguard-systemprompt.txt`)
 
@@ -209,11 +209,11 @@
 - `minConfidence` (float, 0.00 .. 1.00): for minimal confidence to be a trusted decision; default : 0.95
 - `maxUserPromptSize` (int): maximum character size for user prompt (== input); **default**: 2000000 (2 million)</bpmn:text>
     </bpmn:textAnnotation>
-    <bpmn:association id="Association_030ox7l" associationDirection="None" sourceRef="StartEvent_1" targetRef="TextAnnotation_0bwbzo7" />
-    <bpmn:textAnnotation id="TextAnnotation_0bumapk">
+    <bpmn:association id="Association_030ox7l" associationDirection="None" sourceRef="StartEvent" targetRef="StartElement_TextAnnotation" />
+    <bpmn:textAnnotation id="EndElement_TextAnnotation">
       <bpmn:text>`safeGuardResult` contains the result as a well defined JSON schema</bpmn:text>
     </bpmn:textAnnotation>
-    <bpmn:association id="Association_0g2yaw3" associationDirection="None" sourceRef="Event_safeGuardResult" targetRef="TextAnnotation_0bumapk" />
+    <bpmn:association id="Association_0g2yaw3" associationDirection="None" sourceRef="EndEvent_safeGuardResult" targetRef="EndElement_TextAnnotation" />
   </bpmn:process>
   <bpmn:message id="Message_2rdm1ak" name="StartSafeguard" />
   <bpmn:message id="Message_1hoamcp" name="StartImageRecognition" />
@@ -239,7 +239,7 @@
       <bpmndi:BPMNShape id="Event_10kntrl_di" bpmnElement="Event_task-agent-failed">
         <dc:Bounds x="742" y="462" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1tijisg_di" bpmnElement="Event_safeGuardResult">
+      <bpmndi:BPMNShape id="Event_1tijisg_di" bpmnElement="EndEvent_safeGuardResult">
         <dc:Bounds x="1260" y="332" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1248" y="375" width="62" height="27" />
@@ -255,7 +255,7 @@
         <dc:Bounds x="670" y="310" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1v3fy3l_di" bpmnElement="StartEvent_1">
+      <bpmndi:BPMNShape id="Event_1v3fy3l_di" bpmnElement="StartEvent">
         <dc:Bounds x="272" y="332" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="251" y="375" width="79" height="27" />
@@ -298,11 +298,11 @@
       <bpmndi:BPMNShape id="Activity_0ya5qgn_di" bpmnElement="Activity_refine_system_prompt">
         <dc:Bounds x="640" y="520" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_0bwbzo7_di" bpmnElement="TextAnnotation_0bwbzo7">
+      <bpmndi:BPMNShape id="TextAnnotation_0bwbzo7_di" bpmnElement="StartElement_TextAnnotation">
         <dc:Bounds x="160" y="40" width="363" height="190" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_0bumapk_di" bpmnElement="TextAnnotation_0bumapk">
+      <bpmndi:BPMNShape id="TextAnnotation_0bumapk_di" bpmnElement="EndElement_TextAnnotation">
         <dc:Bounds x="1244" y="170" width="156" height="70" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
