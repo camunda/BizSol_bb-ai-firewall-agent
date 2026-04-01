@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-
 /**
  * Shared base class for LLM integration tests that use real LLM calls via AWS Bedrock.
  *
