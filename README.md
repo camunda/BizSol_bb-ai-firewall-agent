@@ -2,7 +2,7 @@
 
 This repository contains a Camunda building block that evaluates an incoming user prompt before it reaches an AI-powered task. It helps you detect unsafe prompts and return a structured decision your process can act on.
 
-![AI Firewall Agent](camunda-artifacts/safeguard-agent.png)
+![AI Firewall Agent](docs/safeguard-agent.svg)
 
 ## What problem this building block solves
 User prompts can contain malicious or unsafe instructions. In an AI-powered workflow, that can lead to prompt injection, manipulated agent behavior, or unsafe downstream actions.
@@ -29,9 +29,9 @@ The `camunda-artifacts` directory contains the main BPMN and reference files for
 |------|---------|
 | `safeguard-agent.bpmn` | **Required.** Main firewall process to deploy to your Camunda cluster. |
 | `safeguard-agent-usage-example.bpmn` | Example BPMN that calls the safeguard agent via a Call Activity. See [example](camunda-artifacts/README-usage-example.md) (Optional)  |
-| `safeguard-systemprompt.txt` | Reference system prompt used by the firewall. |
-| `safeguard-systemprompt-feel.txt` | FEEL-escaped version of the system prompt for BPMN expressions. |
-| `safeguard-confidence-refinement.txt` | Directive appended when confidence is too low and the process retries. |
+| `txt/safeguard-systemprompt.txt` | Reference system prompt used by the firewall. |
+| `txt/safeguard-systemprompt-feel.txt` | FEEL-escaped version of the system prompt for BPMN expressions. |
+| `txt/safeguard-confidence-refinement.txt` | Directive appended when confidence is too low and the process retries. |
 
 ## Prerequisites
 
@@ -119,16 +119,7 @@ The process writes its result to the `safeGuardResult` variable using this schem
 ### Error handling and escalations
 
 The building block can escalate when the prompt is too large, the model output is invalid, retries are exhausted, or the AI task fails.
-
-Common escalation paths include:
-
-`safeguard_max-user-input-exceeded`
-`safeguard_max-iterations-reached`
-`safeguard_task-agent-failed`
-`safeguard_json-worker-error`
-`safeguard_bad-agent-output`
-
-The usage example catches these escalations and converts them into BPMN errors so operators can review failures
+The usage example catches these escalations and converts them into BPMN errors so operators can review failures.
 
 ## Development setup
 
@@ -154,7 +145,7 @@ This activates a pre-commit hook that runs `mvn spotless:apply` automatically be
 mvn test
 ```
 
-Tests use [Camunda Process Test](https://docs.camunda.io/docs/apis-tools/testing/getting-started/) with Testcontainers and WireMock and require Docker
+Tests use [Camunda Process Test](https://docs.camunda.io/docs/apis-tools/testing/getting-started/) with Testcontainers and WireMock and requires Docker.
 
 The build enforces:
 - **60 %** BPMN path coverage (via `camunda-process-test`)
@@ -202,9 +193,9 @@ Examples:
 
 No code changes required — the test factory discovers new files automatically.
 
-#### minConfidence setting
+#### `minConfidence` setting
 
-LLM integration tests set `minConfidence: 0.5` (lower than production default of 0.95) to avoid retry loops during testing. Assertions target the `decision` value, not confidence.
+LLM integration tests set `minConfidence: 0.5` (lower than the production default of 0.95) to avoid retry loops during testing. Assertions target the `decision` value, not confidence.
 
 #### Coverage
 
