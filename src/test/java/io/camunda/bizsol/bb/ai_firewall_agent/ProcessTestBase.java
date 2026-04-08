@@ -35,7 +35,7 @@ abstract class ProcessTestBase {
     // -- Paths ------------------------------------------------------------------
     static final Path BPMN_SOURCE = Path.of("camunda-artifacts/safeguard-agent.bpmn");
     private static final Path SYSTEM_PROMPT_PATH =
-            Path.of("camunda-artifacts/safeguard-systemprompt.txt");
+            Path.of("camunda-artifacts/txt/safeguard-systemprompt.txt");
 
     /** System prompt loaded once from {@code camunda-artifacts/safeguard-systemprompt.txt}. */
     static final String SYSTEM_PROMPT = loadSystemPrompt();

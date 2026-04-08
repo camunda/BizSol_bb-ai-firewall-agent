@@ -2,7 +2,7 @@
 
 This repository contains a Camunda building block that evaluates an incoming user prompt before it reaches an AI-powered task. It helps you detect unsafe prompts and return a structured decision your process can act on.
 
-![AI Firewall Agent](camunda-artifacts/safeguard-agent.png)
+![AI Firewall Agent](docs/safeguard-agent.svg)
 
 ## What problem this building block solves
 User prompts can contain malicious or unsafe instructions. In an AI-powered workflow, that can lead to prompt injection, manipulated agent behavior, or unsafe downstream actions.
@@ -28,10 +28,10 @@ The `camunda-artifacts` directory contains the main BPMN and reference files for
 | File | Purpose |
 |------|---------|
 | `safeguard-agent.bpmn` | **Required.** Main firewall process to deploy to your Camunda cluster. |
-| `safeguard-agent-usage-example.bpmn` | Example BPMN that calls the safeguard agent via a Call Activity. See [example](camunda-artifacts/README-usage-example.md) (Optional)  |
-| `safeguard-systemprompt.txt` | Reference system prompt used by the firewall. |
-| `safeguard-systemprompt-feel.txt` | FEEL-escaped version of the system prompt for BPMN expressions. |
-| `safeguard-confidence-refinement.txt` | Directive appended when confidence is too low and the process retries. |
+| `safeguard-agent-usage-example.bpmn` | Example BPMN that calls the safeguard agent via a Call Activity. |
+| `txt/safeguard-systemprompt.txt` | Reference system prompt used by the firewall. |
+| `txt/safeguard-systemprompt-feel.txt` | FEEL-escaped version of the system prompt for BPMN expressions. |
+| `txt/safeguard-confidence-refinement.txt` | Directive appended when confidence is too low and the process retries. |
 
 ## Prerequisites
 
@@ -63,7 +63,6 @@ For the minimal happy path, start the process with a prompt like this:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `userPromptToSafeguard`| (string) the user prompt to evaluate | null |
-| `systemPrompt`| (string) for system prompt | (see file `safeguard-systemprompt.txt`) |
 
 ### Optional Guardrails
 
@@ -109,6 +108,22 @@ The process writes its result to the `safeGuardResult` variable using this schem
 }
 ```
 
+#### Happy path output example
+
+For a benign prompt, a typical response looks like:
+
+```json
+{
+  "decision": "allow",
+  "risk_labels": [],
+  "reasons": ["Benign request for claim status information."],
+  "evidence": [],
+  "sanitized_prompt": "",
+  "normalizations_applied": [],
+  "confidence": 0.92
+}
+```
+
 ### What the decision means
 
 `allow` — The prompt is safe to continue as-is.
@@ -118,17 +133,20 @@ The process writes its result to the `safeGuardResult` variable using this schem
 
 ### Error handling and escalations
 
-The building block can escalate when the prompt is too large, the model output is invalid, retries are exhausted, or the AI task fails.
+The building block throws escalations for the following conditions:
 
-Common escalation paths include:
+| Escalation code | Trigger |
+|---|---|
+| `safeguard_max-user-input-exceeded` | User prompt exceeds `maxUserPromptSize` |
+| `safeguard_max-iterations-reached` | Retry count exhausted without sufficient confidence |
+| `safeguard_task-agent-failed` | AI agent connector throws a BPMN error |
+| `safeguard_bad-agent-output` | LLM response missing required `decision`/`confidence` fields |
 
-`safeguard_max-user-input-exceeded`
-`safeguard_max-iterations-reached`
-`safeguard_task-agent-failed`
-`safeguard_json-worker-error`
-`safeguard_bad-agent-output`
+The usage example (`safeguard-agent-usage-example.bpmn`) catches all of these via event subprocesses and converts them into BPMN errors so operators can review failures. You can customize those subprocesses to implement your own error handling strategy.
 
-The usage example catches these escalations and converts them into BPMN errors so operators can review failures
+#### Integration note
+
+When calling the safeguard agent via a Call Activity, use `propagateAllChildVariables="false"` and map only the variables you need explicitly. This prevents variable leakage between the calling process and the safeguard agent.
 
 ## Development setup
 
@@ -154,7 +172,7 @@ This activates a pre-commit hook that runs `mvn spotless:apply` automatically be
 mvn test
 ```
 
-Tests use [Camunda Process Test](https://docs.camunda.io/docs/apis-tools/testing/getting-started/) with Testcontainers and WireMock and require Docker
+Tests use [Camunda Process Test](https://docs.camunda.io/docs/apis-tools/testing/getting-started/) with Testcontainers and WireMock and requires Docker.
 
 The build enforces:
 - **60 %** BPMN path coverage (via `camunda-process-test`)
@@ -202,9 +220,9 @@ Examples:
 
 No code changes required — the test factory discovers new files automatically.
 
-#### minConfidence setting
+#### `minConfidence` setting
 
-LLM integration tests set `minConfidence: 0.5` (lower than production default of 0.95) to avoid retry loops during testing. Assertions target the `decision` value, not confidence.
+LLM integration tests set `minConfidence: 0.5` (lower than the production default of 0.95) to avoid retry loops during testing. Assertions target the `decision` value, not confidence.
 
 #### Coverage
 
