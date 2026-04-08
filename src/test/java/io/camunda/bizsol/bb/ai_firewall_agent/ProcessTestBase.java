@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * Shared test infrastructure for safeguard-agent process tests.
@@ -51,9 +50,6 @@ abstract class ProcessTestBase {
     }
 
     // -- Fixtures ---------------------------------------------------------------
-    @SpringBootApplication
-    static class TestApplication {}
-
     @Autowired CamundaClient camundaClient;
     @Autowired CamundaProcessTestContext processTestContext;
 
