@@ -1,3 +1,14 @@
+___
+**Technical Preview Release**: This repository contains an early access version of our solutions component, currently under evaluation at Camunda.
+- Features may be incomplete or experimental.
+- Limited support is provided; this code is not part of Camunda Support.
+- Please report any bugs directly in the issues section of the repository.
+- There are no regular updates.
+- There is no guarantee of stability or suitability for production use.
+
+For feedback, please create an issue. :rocket:
+___
+
 # AI Firewall Agent
 
 This repository contains a Camunda building block that evaluates an incoming user prompt before it reaches an AI-powered task. It helps you detect unsafe prompts and return a structured decision your process can act on.
