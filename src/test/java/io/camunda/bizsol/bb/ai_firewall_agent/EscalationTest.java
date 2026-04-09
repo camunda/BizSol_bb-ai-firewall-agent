@@ -1,6 +1,5 @@
 package io.camunda.bizsol.bb.ai_firewall_agent;
 
-import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.util.HashMap;
@@ -16,9 +15,9 @@ import org.springframework.boot.test.context.SpringBootTest;
  * Tests all escalation event paths in the safeguard-agent BPMN process.
  *
  * <p>The AI Agent connector task properties are already fully configured in the BPMN file via
- * {@code zeebe:input} mappings and {@code zeebe:taskHeaders}. This test deploys the BPMN as-is
- * (with optional string-level replacements via {@link BpmnFile#replace}) and manually completes /
- * fails AI agent jobs to exercise each escalation path.
+ * {@code zeebe:input} mappings and {@code zeebe:taskHeaders}. This test deploys the BPMN (with
+ * XPath-driven modifications applied via {@link ProcessTestBase#deployProcess}) and manually
+ * completes / fails AI agent jobs to exercise each escalation path.
  *
  * <h3>Escalation events under test</h3>
  *

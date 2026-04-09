@@ -3,7 +3,6 @@ package io.camunda.bizsol.bb.ai_firewall_agent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
-import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile.Replace;
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -60,16 +59,16 @@ abstract class ProcessTestBase {
     @BeforeEach
     void deployProcess() {
         BpmnModelInstance model =
-                BpmnFile.replace(
-                        BPMN_SOURCE.toFile(),
-                        Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
-                                "<zeebe:input source=\"http://localhost:8089/v1\""
-                                        + " target=\"provider.openaiCompatible.endpoint\" />"),
-                        Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\"test-model\""
-                                        + " target=\"provider.openaiCompatible.model.model\" />"));
+                new BpmnFile(BPMN_SOURCE)
+                        .changeProperties(
+                                "//zeebe:input[@target='provider.openaiCompatible.endpoint']",
+                                "source",
+                                "http://localhost:8089/v1")
+                        .changeProperties(
+                                "//zeebe:input[@target='provider.openaiCompatible.model.model']",
+                                "source",
+                                "test-model")
+                        .asBpmnModel();
 
         camundaClient
                 .newDeployResourceCommand()

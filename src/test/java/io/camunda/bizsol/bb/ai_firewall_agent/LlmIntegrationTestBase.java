@@ -1,7 +1,6 @@
 package io.camunda.bizsol.bb.ai_firewall_agent;
 
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
-import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile.Replace;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaAssert;
@@ -105,33 +104,46 @@ abstract class LlmIntegrationTestBase {
     @BeforeEach
     void deployProcess() {
         BpmnModelInstance model =
-                BpmnFile.replace(
-                        BPMN_SOURCE.toFile(),
-                        Replace.replace(
-                                "<zeebe:input source=\"openaiCompatible\" target=\"provider.type\" />",
-                                "<zeebe:input source=\"bedrock\" target=\"provider.type\" />"),
-                        Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
-                                "<zeebe:input source=\""
-                                        + BEDROCK_REGION
-                                        + "\" target=\"provider.bedrock.region\" />\n"
-                                        + "          <zeebe:input source=\"credentials\""
-                                        + " target=\"provider.bedrock.authentication.type\" />\n"
-                                        + "          <zeebe:input source=\"{{secrets.AWS_ACCESS_KEY}}\""
-                                        + " target=\"provider.bedrock.authentication.accessKey\" />\n"
-                                        + "          <zeebe:input source=\"{{secrets.AWS_SECRET_KEY}}\""
-                                        + " target=\"provider.bedrock.authentication.secretKey\" />"),
-                        Replace.replace(
-                                "<zeebe:input source=\"PT10M\""
-                                        + " target=\"provider.openaiCompatible.timeouts.timeout\" />",
-                                ""),
-                        Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\""
-                                        + MODEL
-                                        + "\""
-                                        + " target=\"provider.bedrock.model.model\" />"),
-                        Replace.replace("retries=\"3\"", "retries=\"0\""));
+                new BpmnFile(BPMN_SOURCE)
+                        .changeProperties(
+                                "//zeebe:input[@target='provider.type']", "source", "bedrock")
+                        .changeProperties(
+                                "//zeebe:input[@target='provider.openaiCompatible.endpoint']",
+                                "source",
+                                BEDROCK_REGION,
+                                "target",
+                                "provider.bedrock.region")
+                        .appendElement(
+                                "//zeebe:ioMapping[zeebe:input[@target='provider.bedrock.region']]",
+                                "zeebe:input",
+                                "source",
+                                "credentials",
+                                "target",
+                                "provider.bedrock.authentication.type")
+                        .appendElement(
+                                "//zeebe:ioMapping[zeebe:input[@target='provider.bedrock.region']]",
+                                "zeebe:input",
+                                "source",
+                                "{{secrets.AWS_ACCESS_KEY}}",
+                                "target",
+                                "provider.bedrock.authentication.accessKey")
+                        .appendElement(
+                                "//zeebe:ioMapping[zeebe:input[@target='provider.bedrock.region']]",
+                                "zeebe:input",
+                                "source",
+                                "{{secrets.AWS_SECRET_KEY}}",
+                                "target",
+                                "provider.bedrock.authentication.secretKey")
+                        .removeElement(
+                                "//zeebe:input[@target='provider.openaiCompatible.timeouts.timeout']")
+                        .changeProperties(
+                                "//zeebe:input[@target='provider.openaiCompatible.model.model']",
+                                "source",
+                                MODEL,
+                                "target",
+                                "provider.bedrock.model.model")
+                        .changeProperties("//zeebe:taskDefinition", "retries", "0")
+                        .asBpmnModel();
 
         // --- dump the resulting BPMN for debugging (skip in CI) ---
         if (System.getenv("CI") == null) {
