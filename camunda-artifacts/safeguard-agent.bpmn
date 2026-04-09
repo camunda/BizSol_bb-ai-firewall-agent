@@ -75,7 +75,7 @@
           <zeebe:input source="credentials" target="provider.bedrock.authentication.type" />
           <zeebe:input source="{{secrets.AWS_ACCESS_KEY}}" target="provider.bedrock.authentication.accessKey" />
           <zeebe:input source="{{secrets.AWS_SECRET_KEY}}" target="provider.bedrock.authentication.secretKey" />
-          <zeebe:input source="us.anthropic.claude-3-5-sonnet-20240620-v1:0" target="provider.bedrock.model.model" />
+          <zeebe:input source="global.anthropic.claude-sonnet-4-5-20250929-v1:0" target="provider.bedrock.model.model" />
           <zeebe:input source="=_systemPrompt" target="data.systemPrompt.prompt" />
           <zeebe:input source="=userPromptToSafeguard" target="data.userPrompt.prompt" />
           <zeebe:input source="=agent.context" target="data.context" />
