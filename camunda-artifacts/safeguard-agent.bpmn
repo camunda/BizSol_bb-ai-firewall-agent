@@ -70,12 +70,9 @@
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="io.camunda.agenticai:aiagent:1" retries="3" />
         <zeebe:ioMapping>
-          <zeebe:input source="bedrock" target="provider.type" />
-          <zeebe:input source="eu-west-1" target="provider.bedrock.region" />
-          <zeebe:input source="credentials" target="provider.bedrock.authentication.type" />
-          <zeebe:input source="{{secrets.AWS_ACCESS_KEY}}" target="provider.bedrock.authentication.accessKey" />
-          <zeebe:input source="{{secrets.AWS_SECRET_KEY}}" target="provider.bedrock.authentication.secretKey" />
-          <zeebe:input source="global.anthropic.claude-sonnet-4-5-20250929-v1:0" target="provider.bedrock.model.model" />
+          <zeebe:input source="openaiCompatible" target="provider.type" />
+          <zeebe:input target="provider.openaiCompatible.endpoint" />
+          <zeebe:input source="gpt-4o" target="provider.openaiCompatible.model.model" />
           <zeebe:input source="=_systemPrompt" target="data.systemPrompt.prompt" />
           <zeebe:input source="=userPromptToSafeguard" target="data.userPrompt.prompt" />
           <zeebe:input source="=agent.context" target="data.context" />

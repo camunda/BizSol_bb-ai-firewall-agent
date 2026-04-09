@@ -63,13 +63,33 @@ abstract class ProcessTestBase {
                 BpmnFile.replace(
                         BPMN_SOURCE.toFile(),
                         Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
-                                "<zeebe:input source=\"http://localhost:8089/v1\""
-                                        + " target=\"provider.openaiCompatible.endpoint\" />"),
+                                "<zeebe:input source=\"bedrock\" target=\"provider.type\" />",
+                                "<zeebe:input source=\"openaiCompatible\" target=\"provider.type\" />"
+                                        + "<zeebe:input source=\"http://localhost:8089/v1\""
+                                        + " target=\"provider.openaiCompatible.endpoint\" />"
+                                        + "<zeebe:input source=\"test-model\""
+                                        + " target=\"provider.openaiCompatible.model.model\" />"),
                         Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\"test-model\""
-                                        + " target=\"provider.openaiCompatible.model.model\" />"));
+                                "<zeebe:input source=\"eu-west-1\""
+                                        + " target=\"provider.bedrock.region\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input source=\"credentials\""
+                                        + " target=\"provider.bedrock.authentication.type\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input source=\"{{secrets.AWS_ACCESS_KEY}}\""
+                                        + " target=\"provider.bedrock.authentication.accessKey\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input source=\"{{secrets.AWS_SECRET_KEY}}\""
+                                        + " target=\"provider.bedrock.authentication.secretKey\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input"
+                                        + " source=\"global.anthropic.claude-sonnet-4-5-20250929-v1:0\""
+                                        + " target=\"provider.bedrock.model.model\" />",
+                                ""));
 
         camundaClient
                 .newDeployResourceCommand()
