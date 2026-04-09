@@ -3,13 +3,13 @@
  * Prompt tuning script for safeguard-agent.
  *
  * Prerequisites:
- *   1. Local Camunda cluster running; c8ctl already wired to it
+ *   1. c8ctl wired to a local (c8run, ...) or SaaS Camunda cluster
  *   2. Connector runtime configured with AWS_ACCESS_KEY / AWS_SECRET_KEY secrets
  *
- * The script deploys src/test/resources/safeguard-agent.aws.bpmn automatically
+ * The script deploys camunda-artifacts/safeguard-agent.bpmn automatically
  * before every run (patching model/region in-memory when --model / --region are given).
  * The system prompt is always passed as a process variable, so editing
- * camunda-artifacts/safeguard-systemprompt.txt takes effect immediately —
+ * camunda-artifacts/txt/safeguard-systemprompt.txt takes effect immediately —
  * no redeploy needed between prompt iterations.
  *
  * When multiple models are given (comma-separated or repeated --model flags), the script
@@ -39,7 +39,7 @@
  *
  * Iteration loop (single model):
  *   1. node scripts/run-prompts-local.mjs               # deploy + run all prompts
- *   2. Edit camunda-artifacts/safeguard-systemprompt.txt
+ *   2. Edit camunda-artifacts/txt/safeguard-systemprompt.txt
  *   3. node scripts/run-prompts-local.mjs --prompt <failing-file> --verbose
  *   4. Repeat until all pass
  *   5. mvn compile exec:java                             # sync prompt to production BPMN
@@ -63,8 +63,8 @@ const execFileAsync = promisify(execFile);
 const SCRIPT_DIR = fileURLToPath(new URL('.', import.meta.url));
 const PROJECT_ROOT = resolve(SCRIPT_DIR, '..');
 const PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'test', 'resources', 'prompts');
-const SYSTEM_PROMPT_PATH = join(PROJECT_ROOT, 'camunda-artifacts', 'safeguard-systemprompt.txt');
-const BPMN_SOURCE = join(PROJECT_ROOT, 'src', 'test', 'resources', 'safeguard-agent.aws.bpmn');
+const SYSTEM_PROMPT_PATH = join(PROJECT_ROOT, 'camunda-artifacts', 'txt', 'safeguard-systemprompt.txt');
+const BPMN_SOURCE = join(PROJECT_ROOT, 'camunda-artifacts', 'safeguard-agent.bpmn');
 
 // ── Constants (mirrors LlmIntegrationTestBase) ────────────────────────────────
 

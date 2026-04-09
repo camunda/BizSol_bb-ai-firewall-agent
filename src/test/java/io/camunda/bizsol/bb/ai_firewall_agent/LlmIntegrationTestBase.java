@@ -108,29 +108,18 @@ abstract class LlmIntegrationTestBase {
                 BpmnFile.replace(
                         BPMN_SOURCE.toFile(),
                         Replace.replace(
-                                "<zeebe:input source=\"openaiCompatible\" target=\"provider.type\" />",
-                                "<zeebe:input source=\"bedrock\" target=\"provider.type\" />"),
-                        Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
+                                "<zeebe:input source=\"eu-west-1\""
+                                        + " target=\"provider.bedrock.region\" />",
                                 "<zeebe:input source=\""
                                         + BEDROCK_REGION
-                                        + "\" target=\"provider.bedrock.region\" />\n"
-                                        + "          <zeebe:input source=\"credentials\""
-                                        + " target=\"provider.bedrock.authentication.type\" />\n"
-                                        + "          <zeebe:input source=\"{{secrets.AWS_ACCESS_KEY}}\""
-                                        + " target=\"provider.bedrock.authentication.accessKey\" />\n"
-                                        + "          <zeebe:input source=\"{{secrets.AWS_SECRET_KEY}}\""
-                                        + " target=\"provider.bedrock.authentication.secretKey\" />"),
+                                        + "\" target=\"provider.bedrock.region\" />"),
                         Replace.replace(
-                                "<zeebe:input source=\"PT10M\""
-                                        + " target=\"provider.openaiCompatible.timeouts.timeout\" />",
-                                ""),
-                        Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
+                                "<zeebe:input"
+                                        + " source=\"global.anthropic.claude-sonnet-4-5-20250929-v1:0\""
+                                        + " target=\"provider.bedrock.model.model\" />",
                                 "<zeebe:input source=\""
                                         + MODEL
-                                        + "\""
-                                        + " target=\"provider.bedrock.model.model\" />"),
+                                        + "\" target=\"provider.bedrock.model.model\" />"),
                         Replace.replace("retries=\"3\"", "retries=\"0\""));
 
         // --- dump the resulting BPMN for debugging (skip in CI) ---
