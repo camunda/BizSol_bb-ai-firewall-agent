@@ -26,12 +26,12 @@ class HappyPathTest extends ProcessTestBase {
                 """;
         completeAgentJobWith(goodResponseJson);
 
-        // The JsonConverterWorker parses the response →
+        // The AI agent connector parses the JSON response →
         //   safeGuardResult has decision + confidence →
         //   confidence (0.99) >= minConfidence (0.95) →
-        //   process ends at Event_safeGuardResult
+        //   process ends at EndEvent_safeGuardResult
         CamundaAssert.assertThat(processInstance)
-                .hasCompletedElements("Event_safeGuardResult")
+                .hasCompletedElements("EndEvent_safeGuardResult")
                 .isCompleted()
                 .hasVariableNames("safeGuardResult");
     }

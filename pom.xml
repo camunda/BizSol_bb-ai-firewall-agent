@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.10</version>
+    <version>3.5.13</version>
     <relativePath />
     <!-- lookup parent from repository -->
   </parent>
@@ -41,6 +41,7 @@
     <google-java-format.version>1.30.0</google-java-format.version>
 
     <!-- testing -->
+    <skip.unit.tests>false</skip.unit.tests>
     <jacoco.version>0.8.13</jacoco.version>
     <groovy.version>5.0.4</groovy.version>
     <testcontainers.version>1.21.4</testcontainers.version>
@@ -64,7 +65,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-starter</artifactId>
-      <version>8.8.0</version>
+      <version>8.8.21</version>
     </dependency>
 
     <!-- Testing -->
@@ -77,7 +78,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-process-test-spring</artifactId>
-      <version>8.8.0</version>
+      <version>8.8.21</version>
       <scope>test</scope>
     </dependency>
 
@@ -102,6 +103,13 @@
       <artifactId>archunit-junit5</artifactId>
       <version>1.4.1</version>
       <scope>test</scope>
+    </dependency>
+
+    <!-- FEEL-scala engine for prompt sync tool -->
+    <dependency>
+      <groupId>org.camunda.feel</groupId>
+      <artifactId>feel-engine</artifactId>
+      <version>1.21.0</version>
     </dependency>
 
     <!-- Groovy for Maven plugin -->
@@ -133,10 +141,33 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skip>${skip.unit.tests}</skip>
+          <argLine>
+            @{argLine}
+            -XX:+EnableDynamicAgentLoading
+            --enable-native-access=ALL-UNNAMED
+          </argLine>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
+          <argLine>
+            @{argLine}
+            -XX:+EnableDynamicAgentLoading
+            --enable-native-access=ALL-UNNAMED
+          </argLine>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -145,6 +176,14 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <mainClass>io.camunda.bizsol.bb.ai_firewall_agent.tools.SyncPrompt</mainClass>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
@@ -275,6 +314,12 @@
               <scripts>
                 <script><![CDATA[
                                    import groovy.json.JsonSlurper
+
+                                   def skipFlag = System.getProperty('skip.cpt.coverage', 'false')
+                                   if (skipFlag == 'true') {
+                                     println "CPT coverage check skipped (skip.cpt.coverage=true)"
+                                     return
+                                   }
 
                                    println "CPT Coverage Verification Groovy Script Starting ..."
 

@@ -1,5 +1,7 @@
 package io.camunda.bizsol.bb.ai_firewall_agent;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile;
 import io.camunda.bizsol.bb.ai_firewall_agent.util.BpmnFile.Replace;
 import io.camunda.client.CamundaClient;
@@ -33,7 +35,7 @@ abstract class ProcessTestBase {
     // -- Paths ------------------------------------------------------------------
     static final Path BPMN_SOURCE = Path.of("camunda-artifacts/safeguard-agent.bpmn");
     private static final Path SYSTEM_PROMPT_PATH =
-            Path.of("camunda-artifacts/safeguard-systemprompt.txt");
+            Path.of("camunda-artifacts/txt/safeguard-systemprompt.txt");
 
     /** System prompt loaded once from {@code camunda-artifacts/safeguard-systemprompt.txt}. */
     static final String SYSTEM_PROMPT = loadSystemPrompt();
@@ -61,13 +63,33 @@ abstract class ProcessTestBase {
                 BpmnFile.replace(
                         BPMN_SOURCE.toFile(),
                         Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.endpoint\" />",
-                                "<zeebe:input source=\"http://localhost:8089/v1\""
-                                        + " target=\"provider.openaiCompatible.endpoint\" />"),
+                                "<zeebe:input source=\"bedrock\" target=\"provider.type\" />",
+                                "<zeebe:input source=\"openaiCompatible\" target=\"provider.type\" />"
+                                        + "<zeebe:input source=\"http://localhost:8089/v1\""
+                                        + " target=\"provider.openaiCompatible.endpoint\" />"
+                                        + "<zeebe:input source=\"test-model\""
+                                        + " target=\"provider.openaiCompatible.model.model\" />"),
                         Replace.replace(
-                                "<zeebe:input target=\"provider.openaiCompatible.model.model\" />",
-                                "<zeebe:input source=\"test-model\""
-                                        + " target=\"provider.openaiCompatible.model.model\" />"));
+                                "<zeebe:input source=\"eu-west-1\""
+                                        + " target=\"provider.bedrock.region\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input source=\"credentials\""
+                                        + " target=\"provider.bedrock.authentication.type\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input source=\"{{secrets.AWS_ACCESS_KEY}}\""
+                                        + " target=\"provider.bedrock.authentication.accessKey\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input source=\"{{secrets.AWS_SECRET_KEY}}\""
+                                        + " target=\"provider.bedrock.authentication.secretKey\" />",
+                                ""),
+                        Replace.replace(
+                                "<zeebe:input"
+                                        + " source=\"global.anthropic.claude-sonnet-4-5-20250929-v1:0\""
+                                        + " target=\"provider.bedrock.model.model\" />",
+                                ""));
 
         camundaClient
                 .newDeployResourceCommand()
@@ -76,17 +98,27 @@ abstract class ProcessTestBase {
                 .join();
     }
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     // ╔══════════════════════════════════════════════════════════════════════════╗
     // ║ Helper methods                                                          ║
     // ╚══════════════════════════════════════════════════════════════════════════╝
 
     /**
-     * Complete the next AI agent job with variables that set {@code responseJSONString}. Uses
-     * {@link CamundaProcessTestContext#completeJob} which waits for the job internally.
+     * Complete the next AI agent job with a JSON string that simulates a parsed LLM response.
+     * Because the connector runtime is not active in CPT, the {@code resultExpression} from the
+     * task headers is not evaluated. Instead, we parse the JSON and set {@code safeGuardResult}
+     * directly as a process variable. Uses {@link CamundaProcessTestContext#completeJob} which
+     * waits for the job internally.
      */
     void completeAgentJobWith(String responseJsonString) {
-        processTestContext.completeJob(
-                AI_AGENT_JOB_TYPE, Map.of("responseJSONString", responseJsonString));
+        try {
+            Object parsedJson = OBJECT_MAPPER.readValue(responseJsonString, Object.class);
+            processTestContext.completeJob(
+                    AI_AGENT_JOB_TYPE, Map.of("safeGuardResult", parsedJson));
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Invalid JSON in test fixture: " + e.getMessage());
+        }
     }
 
     /**
